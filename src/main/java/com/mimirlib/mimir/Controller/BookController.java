@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -22,12 +24,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.text.TextFlow;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class BookController {
-
+    private static final Logger logger = Logger.getLogger(BookController.class.getName());
     private Stage stage;
     private Scene scene;
     private Parent root;
@@ -45,32 +46,44 @@ public class BookController {
 
     DatabaseConnection dbasecon = new DatabaseConnection();
 
+
     //INITIALIZE SHIT HERE
     @FXML
     public void initialize() throws SQLException {
         List<String> books = dbasecon.getAllBooks();
-       ObservableList<String> bookList = FXCollections.observableArrayList(books);
-       booksList.setItems(bookList);
+        ObservableList<String> bookList = FXCollections.observableArrayList(books);
+        System.out.println("booksList is null: " + (booksList == null));  // Debugging line
+
+        if (booksList != null) {
+            booksList.setItems(bookList);
+        } else {
+            System.out.println("ListView is still null. Check your FXML.");
+        }
     }
 
 
 
     @FXML
-    public void add(MouseEvent event)throws IOException {
+    public void add(MouseEvent event) throws IOException, SQLException {
         System.out.println("clicked add");
-        URL url = getClass().getResource("/com/mimirlib/mimir/addBook.fxml");
-        System.out.println("FXML URL: " + url);
+//        URL url = getClass().getResource("/com/mimirlib/mimir/addBook.fxml");
+//        System.out.println("FXML URL: " + url);
 
-        Parent root = FXMLLoader.load(getClass().getResource("/com/mimirlib/mimir/addBook.fxml"));
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("/com/mimirlib/mimir/addBook.fxml"));
 
-        stage = new Stage();
-        stage.setTitle("New book");
-        stage.setScene(new Scene(root));
-        stage.initModality(Modality.WINDOW_MODAL); // Block input to parent window
-        stage.initOwner(((Node) event.getSource()).getScene().getWindow()); // set parent
-        stage.showAndWait();
+            stage = new Stage();
+            stage.setTitle("New book");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.WINDOW_MODAL); // Block input to parent window
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow()); // set parent
+            stage.showAndWait();
+            initialize();
+        }catch (Exception e){
+            logger.log(Level.SEVERE,"Error fetching books", e);
+        }
 
-        System.out.println("Successfully added a new book!");
+
     }
 
     @FXML
@@ -86,6 +99,7 @@ public class BookController {
 
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.close();
+
     }
 
 
