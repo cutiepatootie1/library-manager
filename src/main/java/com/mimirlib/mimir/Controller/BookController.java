@@ -19,7 +19,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.TextField;
 import javafx.scene.control.cell.ChoiceBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
@@ -31,25 +30,6 @@ public class BookController {
     private Stage stage;
     private Scene scene;
     private Parent root;
-//from add book modal
-    @FXML
-    private TextField titlefld;
-    @FXML
-    private TextField authorfld;
-    @FXML
-    private ChoiceBox<String> categoryBox;
-    @FXML
-    private ChoiceBox<String> genreBox;
-
-    //FROM edit book modal
-    @FXML
-    private TextField editTitle;
-    @FXML
-    private TextField editAuthor;
-    @FXML
-    private ChoiceBox<String> editCat;
-    @FXML
-    private ChoiceBox<String> editGenre;
 
     DatabaseConnection dbasecon = new DatabaseConnection();
 
@@ -83,6 +63,7 @@ public class BookController {
 
     @FXML
     public void initialize() throws SQLException {
+        System.out.println("Initializing...");
         idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
         titleColumn.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
         authColumn.setCellValueFactory(cellData -> cellData.getValue().authProperty());
@@ -98,48 +79,17 @@ public class BookController {
         mainTable.setItems(FXCollections.observableArrayList(books));
 
         mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-                    if (newSel != null) {
-                        extBookTable.setItems(FXCollections.observableArrayList(newSel));
-                    }
+            if (newSel != null) {
+                extBookTable.setItems(FXCollections.observableArrayList(newSel));
+            }
         });
-        initializeCats();
-        initializeGenre();
         editInitialize();
 
     }
 //FOR EXTENDED BOOK INFO
 
 //OTHER THINGS TO INITIALIZE
-    @FXML
-    public void initializeCats() throws SQLException{
-        List<String> catList = dbasecon.getAllCategories();
 
-
-        ObservableList<String> categories = FXCollections.observableArrayList(catList);
-        System.out.println("Category List is null: " + (categoryBox == null));  // Debugging line
-
-        if (categoryBox != null) {
-            categoryBox.setItems(categories);
-        }else{
-            System.out.println("category box items is still null. Check your FXML");
-        }
-
-    }
-
-    @FXML
-    public void initializeGenre() throws SQLException{
-        List<String> genList = dbasecon.getAllGenre();
-
-        ObservableList<String> genres = FXCollections.observableArrayList(genList);
-        System.out.println("Genre List is null: " + (genreBox == null));  // Debugging line
-
-        if (genreBox != null) {
-            genreBox.setItems(genres);
-        }else{
-            System.out.println("genre box items is still null. Check your FXML");
-        }
-
-    }
 
 /**
  * CORE FUNCTIONALITIES
@@ -147,13 +97,16 @@ public class BookController {
  * */
 
     @FXML
-    public void add(MouseEvent event) throws IOException, SQLException {
+    public void add(MouseEvent event) throws SQLException {
         System.out.println("clicked add");
-//        URL url = getClass().getResource("/com/mimirlib/mimir/addBook.fxml");
-//        System.out.println("FXML URL: " + url);
-
+        initialize();
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/com/mimirlib/mimir/addBook.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/addBook.fxml"));
+            Parent root = loader.load();
+
+            AddModalController modalController = loader.getController();
+            modalController.initializeGenre();
+            modalController.initializeCats();
 
             stage = new Stage();
             stage.setTitle("New book");
@@ -161,29 +114,38 @@ public class BookController {
             stage.initModality(Modality.WINDOW_MODAL); // Block input to parent window
             stage.initOwner(((Node) event.getSource()).getScene().getWindow()); // set parent
             stage.showAndWait();
-            initialize();
+
+            refreshTables();
+
         }catch (Exception e){
-            logger.log(Level.SEVERE,"Error fetching books", e);
+            logger.log(Level.SEVERE,"Error opening add window", e);
         }
-
     }
 
+    public void refreshTables() throws SQLException {
+        System.out.println("refreshing...");
+        idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        titleColumn.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
+        authColumn.setCellValueFactory(cellData -> cellData.getValue().authProperty());
 
-    @FXML
-    private void addProcess(ActionEvent event){
+        extIdCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        extTitleCol.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
+        extAuthCol.setCellValueFactory(cellData -> cellData.getValue().authProperty());
+        extCatCol.setCellValueFactory(cellData -> cellData.getValue().catProperty());
+        extGenCol.setCellValueFactory(cellData -> cellData.getValue().genreProperty());
+        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
-        String title = titlefld.getText();
-        String author = authorfld.getText();
-        String category = categoryBox.getValue().split(" ")[0];
-        String genre = genreBox.getValue().split(" ")[0];
-        String status = "Available";
+        List<Book> books = dbasecon.getAllBooks();
+        mainTable.setItems(FXCollections.observableArrayList(books));
 
-        dbasecon.bookInput(false, title, author, category, genre,status);
-
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.close();
-
+        mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                extBookTable.setItems(FXCollections.observableArrayList(newSel));
+            }
+        });
+        editInitialize();
     }
+
 
     @FXML
     private void editInitialize() throws SQLException{
@@ -196,6 +158,7 @@ public class BookController {
         ObservableList<String> categories = FXCollections.observableArrayList(catList);
         ObservableList<String> genres = FXCollections.observableArrayList(genList);
         ObservableList<String> status = FXCollections.observableArrayList(statusList);
+
 
 
         extTitleCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -244,11 +207,5 @@ public class BookController {
     /**
      * EVENT HANDLERS
     */
-
-    @FXML
-    private void handleClose(ActionEvent event){
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.close();
-    }
 
 }

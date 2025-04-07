@@ -4,6 +4,7 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -35,12 +36,12 @@
             </AnchorPane>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="782.0">
                <children>
-                  <Button fx:id="addBtn" layoutX="166.0" layoutY="260.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="61.0" prefWidth="122.0" text="ADD">
+                  <Button fx:id="addBtn" layoutX="449.0" layoutY="159.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="23.0" prefWidth="103.0" text="ADD">
                      <font>
                         <Font size="18.0" />
                      </font>
                   </Button>
-                  <Button layoutX="168.0" layoutY="430.0" mnemonicParsing="false" prefHeight="59.0" prefWidth="118.0" text="DELETE">
+                  <Button layoutX="327.0" layoutY="159.0" mnemonicParsing="false" prefHeight="33.0" prefWidth="102.0" text="DELETE">
                      <font>
                         <Font size="18.0" />
                      </font>
@@ -55,7 +56,7 @@
                         <Font size="15.0" />
                      </font>
                   </Button>
-                  <Button layoutX="477.0" layoutY="265.0" mnemonicParsing="false" prefHeight="52.0" prefWidth="177.0" text="SEARCH BOOK">
+                  <Button layoutX="89.0" layoutY="279.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="179.0" text="SEARCH BOOK">
                      <font>
                         <Font size="18.0" />
                      </font>
@@ -73,6 +74,11 @@
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                      </columnResizePolicy>
                   </TableView>
+                  <TextField fx:id="searchFld" layoutX="293.0" layoutY="279.0" prefHeight="39.0" prefWidth="458.0" promptText="this can be title, author">
+                     <font>
+                        <Font size="18.0" />
+                     </font>
+                  </TextField>
                </children>
             </AnchorPane>
         </items>
