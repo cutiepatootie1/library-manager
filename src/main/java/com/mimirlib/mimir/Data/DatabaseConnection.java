@@ -110,6 +110,46 @@ public class DatabaseConnection {
         return books;
     }
 
+    public List<String> getAllCategories() throws SQLException{
+        List<String> categories = new ArrayList<>();
+
+        try(CallableStatement stmt = connection.prepareCall("{CALL GetAllCategories()}");
+        ResultSet rs = stmt.executeQuery()
+        ){
+            while (rs.next()) {
+                String code = rs.getString("CategoryCode");
+                String name = rs.getString("CategoryName");
+                String combined = code + " - " + name;
+                categories.add(combined); // Add each category code
+
+            }
+        }catch (SQLException e){
+            logger.log(Level.SEVERE,"Error fetching categories");
+        }
+
+        return categories;
+    }
+
+    public List<String> getAllGenre() throws SQLException{
+        List<String> genre = new ArrayList<>();
+
+        try(CallableStatement stmt = connection.prepareCall("{CALL GetAllGenreCode()}");
+            ResultSet rs = stmt.executeQuery()
+        ){
+            while (rs.next()) {
+                String genrecode = rs.getString("GenreCode");
+                String genrename = rs.getString("GenreName");
+                String combined = genrecode + " - " + genrename;
+                genre.add(combined); // Add each category code
+
+            }
+        }catch (SQLException e){
+            logger.log(Level.SEVERE,"Error fetching genre codes");
+        }
+
+        return genre;
+    }
+
 //    public void viewAllBooks() {
 //        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllBooks()}");
 //             ResultSet rs = stmt.executeQuery()) {

@@ -21,6 +21,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -43,9 +45,15 @@ public class BookController {
     private TextField genrefld;
     @FXML
     private ListView<String> booksList;
+    @FXML
+    private ChoiceBox<String> categoryBox;
+    @FXML
+    private ChoiceBox<String> genreBox;
 
     DatabaseConnection dbasecon = new DatabaseConnection();
 
+    public BookController() throws SQLException {
+    }
 
     //INITIALIZE SHIT HERE
     @FXML
@@ -59,6 +67,40 @@ public class BookController {
         } else {
             System.out.println("ListView is still null. Check your FXML.");
         }
+        initializeCats();
+        initializeGenre();
+
+    }
+
+    @FXML
+    public void initializeCats() throws SQLException{
+        List<String> catList = dbasecon.getAllCategories();
+
+
+        ObservableList<String> categories = FXCollections.observableArrayList(catList);
+        System.out.println("Category List is null: " + (categoryBox == null));  // Debugging line
+
+        if (categoryBox != null) {
+            categoryBox.setItems(categories);
+        }else{
+            System.out.println("category box items is still null. Check your FXML");
+        }
+
+    }
+
+    @FXML
+    public void initializeGenre() throws SQLException{
+        List<String> genList = dbasecon.getAllGenre();
+
+        ObservableList<String> genres = FXCollections.observableArrayList(genList);
+        System.out.println("Genre List is null: " + (genreBox == null));  // Debugging line
+
+        if (genreBox != null) {
+            genreBox.setItems(genres);
+        }else{
+            System.out.println("genre box items is still null. Check your FXML");
+        }
+
     }
 
 
@@ -83,16 +125,16 @@ public class BookController {
             logger.log(Level.SEVERE,"Error fetching books", e);
         }
 
-
     }
+
 
     @FXML
     private void addProcess(ActionEvent event){
 
         String title = titlefld.getText();
         String author = authorfld.getText();
-        String category = catfld.getText();
-        String genre = genrefld.getText();
+        String category = categoryBox.getValue().split(" ")[0];
+        String genre = genreBox.getValue().split(" ")[0];
         String status = "Available";
 
         dbasecon.bookInput(false, title, author, category, genre,status);

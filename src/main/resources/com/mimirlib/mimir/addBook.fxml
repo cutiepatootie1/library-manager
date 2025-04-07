@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -22,16 +23,6 @@
                </font>
             </TextField>
             <TextField fx:id="authorfld" layoutX="163.0" layoutY="151.0" prefHeight="39.0" prefWidth="337.0" promptText="necessary field">
-               <font>
-                  <Font size="14.0" />
-               </font>
-            </TextField>
-            <TextField fx:id="catfld" layoutX="163.0" layoutY="201.0" prefHeight="39.0" prefWidth="334.0" promptText="required for sorting books">
-               <font>
-                  <Font size="14.0" />
-               </font>
-            </TextField>
-            <TextField fx:id="genrefld" layoutX="163.0" layoutY="249.0" prefHeight="39.0" prefWidth="336.0" promptText="good for tagging similar books">
                <font>
                   <Font size="14.0" />
                </font>
@@ -58,6 +49,8 @@
             </Text>
             <Button layoutX="111.0" layoutY="332.0" mnemonicParsing="false" onAction="#addProcess" prefHeight="36.0" prefWidth="73.0" text="Confirm" />
             <Button fx:id="closeBtn" layoutX="401.0" layoutY="332.0" mnemonicParsing="false" onAction="#handleClose" prefHeight="36.0" prefWidth="73.0" text="Back" />
+            <ChoiceBox fx:id="categoryBox" layoutX="163.0" layoutY="207.0" prefHeight="25.0" prefWidth="199.0" />
+            <ChoiceBox fx:id="genreBox" layoutX="162.0" layoutY="261.0" prefHeight="25.0" prefWidth="199.0" />
          </children>
       </AnchorPane>
    </center>
