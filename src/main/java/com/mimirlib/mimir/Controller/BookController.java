@@ -1,15 +1,12 @@
 package com.mimirlib.mimir.Controller;
 
 import java.io.IOException;
-import java.net.URL;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.mimirlib.mimir.Data.Book;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -21,10 +18,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListView;
+import javafx.scene.control.*;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.ChoiceBoxTableCell;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -34,21 +31,25 @@ public class BookController {
     private Stage stage;
     private Scene scene;
     private Parent root;
-
+//from add book modal
     @FXML
     private TextField titlefld;
     @FXML
     private TextField authorfld;
     @FXML
-    private TextField catfld;
-    @FXML
-    private TextField genrefld;
-    @FXML
-    private ListView<String> booksList;
-    @FXML
     private ChoiceBox<String> categoryBox;
     @FXML
     private ChoiceBox<String> genreBox;
+
+    //FROM edit book modal
+    @FXML
+    private TextField editTitle;
+    @FXML
+    private TextField editAuthor;
+    @FXML
+    private ChoiceBox<String> editCat;
+    @FXML
+    private ChoiceBox<String> editGenre;
 
     DatabaseConnection dbasecon = new DatabaseConnection();
 
@@ -57,21 +58,58 @@ public class BookController {
 
     //INITIALIZE SHIT HERE
     @FXML
-    public void initialize() throws SQLException {
-        List<String> books = dbasecon.getAllBooks();
-        ObservableList<String> bookList = FXCollections.observableArrayList(books);
-        System.out.println("booksList is null: " + (booksList == null));  // Debugging line
+    private TableView<Book> mainTable;
+    @FXML
+    private TableColumn<Book, Number> idColumn;
+    @FXML
+    private TableColumn<Book, String> titleColumn;
+    @FXML
+    private TableColumn<Book, String> authColumn;
+    @FXML
+    private TableView<Book> extBookTable;
+    @FXML
+    private TableColumn<Book, Number> extIdCol;
+    @FXML
+    private TableColumn<Book, String> extTitleCol;
+    @FXML
+    private TableColumn<Book, String> extAuthCol;
+    @FXML
+    private TableColumn<Book, String> extCatCol;
+    @FXML
+    private TableColumn<Book, String> extGenCol;
+    @FXML
+    private TableColumn<Book, String> extStatus;
 
-        if (booksList != null) {
-            booksList.setItems(bookList);
-        } else {
-            System.out.println("ListView is still null. Check your FXML.");
-        }
+
+    @FXML
+    public void initialize() throws SQLException {
+        idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        titleColumn.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
+        authColumn.setCellValueFactory(cellData -> cellData.getValue().authProperty());
+
+        extIdCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        extTitleCol.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
+        extAuthCol.setCellValueFactory(cellData -> cellData.getValue().authProperty());
+        extCatCol.setCellValueFactory(cellData -> cellData.getValue().catProperty());
+        extGenCol.setCellValueFactory(cellData -> cellData.getValue().genreProperty());
+        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+
+        List<Book> books = dbasecon.getAllBooks();
+        mainTable.setItems(FXCollections.observableArrayList(books));
+
+        mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+                    if (newSel != null) {
+                        extBookTable.setItems(FXCollections.observableArrayList(newSel));
+                    }
+        });
         initializeCats();
         initializeGenre();
+        editInitialize();
 
     }
+//FOR EXTENDED BOOK INFO
 
+//OTHER THINGS TO INITIALIZE
     @FXML
     public void initializeCats() throws SQLException{
         List<String> catList = dbasecon.getAllCategories();
@@ -103,7 +141,10 @@ public class BookController {
 
     }
 
-
+/**
+ * CORE FUNCTIONALITIES
+ * HERE!!
+ * */
 
     @FXML
     public void add(MouseEvent event) throws IOException, SQLException {
@@ -144,6 +185,65 @@ public class BookController {
 
     }
 
+    @FXML
+    private void editInitialize() throws SQLException{
+        extBookTable.setEditable(true);
+        List<String> catList = dbasecon.getAllCategories();
+        List<String> genList = dbasecon.getAllGenre();
+        List<String> statusList = dbasecon.getAllStatus();
+
+
+        ObservableList<String> categories = FXCollections.observableArrayList(catList);
+        ObservableList<String> genres = FXCollections.observableArrayList(genList);
+        ObservableList<String> status = FXCollections.observableArrayList(statusList);
+
+
+        extTitleCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        extAuthCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        extCatCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(categories));
+        extGenCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(genres));
+        extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(status));
+
+        extTitleCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            book.idProperty().getValue();
+            book.titleProperty().set(event.getNewValue());
+            dbasecon.updateBook(book);
+        });
+
+        extAuthCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            book.idProperty().getValue();
+            book.authProperty().set(event.getNewValue());
+            dbasecon.updateBook(book);
+        });
+
+        extCatCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            book.idProperty().getValue();
+            book.catProperty().set(event.getNewValue().split(" ")[0]);
+            dbasecon.updateBook(book);
+        });
+
+        extGenCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            book.idProperty().getValue();
+            book.genreProperty().set(event.getNewValue().split(" ")[0]);
+            dbasecon.updateBook(book);
+        });
+
+        extStatus.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            book.idProperty().getValue();
+            book.statusProperty().set(event.getNewValue());
+            dbasecon.updateBook(book);
+        });
+    }
+
+
+    /**
+     * EVENT HANDLERS
+    */
 
     @FXML
     private void handleClose(ActionEvent event){

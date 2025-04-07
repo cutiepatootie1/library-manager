@@ -92,15 +92,21 @@ public class DatabaseConnection {
         }
     }
 
-    public List<String> getAllBooks() throws SQLException {
-        List<String> books = new ArrayList<>();
+    public List<Book> getAllBooks(){
+        List<Book> books = new ArrayList<>();
 
         try ( CallableStatement stmt = connection.prepareCall("{CALL GetAllBooks()}");
               ResultSet rs = stmt.executeQuery()
             ) {
 
             while (rs.next()) {
-                books.add(rs.getString("Title")); // Add each book title
+                int id = rs.getInt("BookID");
+                String title = rs.getString("Title");
+                String author = rs.getString("Author");
+                String category = rs.getString("CategoryCode");
+                String genre = rs.getString("GenreCode");
+                String status = rs.getString("Status");
+                books.add(new Book(id, title, author, category, genre, status));
             }
 
         } catch (SQLException e) {
@@ -150,15 +156,23 @@ public class DatabaseConnection {
         return genre;
     }
 
-//    public void viewAllBooks() {
-//        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllBooks()}");
-//             ResultSet rs = stmt.executeQuery()) {
-//
-//            displayResultSet(rs);
-//        } catch (SQLException e) {
-//            System.err.println("Error retrieving books: " + e.getMessage());
-//        }
-//    }
+    public List<String> getAllStatus() throws SQLException{
+        List<String> status = new ArrayList<>();
+
+        try(CallableStatement stmt = connection.prepareCall("{CALL GetAllSTATUS()}");
+            ResultSet rs = stmt.executeQuery()
+        ){
+            while (rs.next()) {
+
+                status.add(rs.getString("Status")); // Add each category code
+
+            }
+        }catch (SQLException e){
+            logger.log(Level.SEVERE,"Error fetching genre codes");
+        }
+
+        return status;
+    }
 
     public void viewBooksWithFilters() {
         try {
@@ -242,10 +256,20 @@ public class DatabaseConnection {
         }
     }
 
+    public void updateBook(Book book){
+        executeBookProcedure(true,
+                book.idProperty().get(),
+                book.titleProperty().get(),
+                book.authProperty().get(),
+                book.catProperty().get(),
+                book.genreProperty().get(),
+                book.statusProperty().get()
+        );
+    }
+
 
     /**
      * STUFF U NEED TO GET SHIT WORKING
-     *
      * **/
 
 

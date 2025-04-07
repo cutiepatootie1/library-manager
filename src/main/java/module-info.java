@@ -4,6 +4,7 @@ module com.mimirlib.mimir {
     requires java.desktop;
     requires java.sql;
     requires java.xml.crypto;
+    requires mysql.connector.j;
 
 
     opens com.mimirlib.mimir to javafx.fxml;
