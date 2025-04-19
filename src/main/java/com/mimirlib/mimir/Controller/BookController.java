@@ -59,6 +59,14 @@ public class BookController {
     private TableColumn<Book, String> extGenCol;
     @FXML
     private TableColumn<Book, String> extStatus;
+    @FXML
+    private TextField searchFld;
+    @FXML
+    private ChoiceBox<String> categoryBox;
+    @FXML
+    private ChoiceBox<String> genreBox;
+    @FXML
+    private ChoiceBox<String> statusBox;
 
 
     @FXML
@@ -84,6 +92,10 @@ public class BookController {
             }
         });
         editInitialize();
+
+        initializeGenre();
+        initializeCats();
+        initializeStatus();
 
     }
 //FOR EXTENDED BOOK INFO
@@ -160,7 +172,6 @@ public class BookController {
         ObservableList<String> status = FXCollections.observableArrayList(statusList);
 
 
-
         extTitleCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extAuthCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extCatCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(categories));
@@ -201,6 +212,77 @@ public class BookController {
             book.statusProperty().set(event.getNewValue());
             dbasecon.updateBook(book);
         });
+    }
+
+    @FXML
+    public void deleteBook(ActionEvent event)throws SQLException{
+        Book selectedItem = mainTable.getSelectionModel().getSelectedItem();
+        if (selectedItem != null){
+            long selectedId = selectedItem.getId();
+            System.out.println("selected id:" + selectedId);
+            DatabaseConnection.deleteBookById(selectedId);
+            refreshTables();
+        }
+    }
+
+    @FXML
+    public void filterBooks(ActionEvent event){
+        String searchTitle = searchFld.getText();
+        String searchAuthor = searchFld.getText();
+        String categoryFilter = categoryBox.getValue() != null ? categoryBox.getValue().split(" ")[0] : "";
+        String genreFilter = genreBox.getValue() != null ? genreBox.getValue().split(" ")[0] : "";
+        String statusFilter = statusBox.getValue() != null ? statusBox.getValue(): "";
+
+        List<Book> filteredBooks = dbasecon.viewBooksWithFilters(searchTitle, searchAuthor, categoryFilter, genreFilter, statusFilter);
+        mainTable.setItems(FXCollections.observableArrayList(filteredBooks));
+
+        System.out.println(filteredBooks);
+
+        System.out.println("CLicked button");
+
+    }
+
+    public void initializeCats() throws SQLException {
+        List<String> catList = dbasecon.getAllCategories();
+
+
+        ObservableList<String> categories = FXCollections.observableArrayList(catList);
+        System.out.println("Category List is null: " + (categoryBox == null));  // Debugging line
+
+        if (categoryBox != null) {
+            categoryBox.setItems(categories);
+        }else{
+            System.out.println("category box items is still null. Check your FXML");
+        }
+
+    }
+
+    public void initializeGenre() throws SQLException{
+        List<String> genList = dbasecon.getAllGenre();
+
+        ObservableList<String> genres = FXCollections.observableArrayList(genList);
+        System.out.println("Genre List is null: " + (genreBox == null));  // Debugging line
+
+        if (genreBox != null) {
+            genreBox.setItems(genres);
+        }else{
+            System.out.println("genre box items is still null. Check your FXML");
+        }
+
+    }
+
+    public void initializeStatus() throws SQLException{
+        List<String> statList = dbasecon.getAllStatus();
+
+        ObservableList<String> genres = FXCollections.observableArrayList(statList);
+        System.out.println("Genre List is null: " + (statusBox == null));  // Debugging line
+
+        if (statusBox != null) {
+            statusBox.setItems(genres);
+        }else{
+            System.out.println("status box items is still null. Check your FXML");
+        }
+
     }
 
 

@@ -82,7 +82,7 @@ public class DatabaseConnection {
                 "CREATE PROCEDURE UpdateMember(IN p_member_id INT, IN p_name VARCHAR(255), IN p_email VARCHAR(255), IN p_phone VARCHAR(15), IN p_member_type VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id LIMIT 1) THEN SET p_error_message = 'Member ID does not exist.'; ELSE UPDATE Members SET Name = p_name, Email = p_email, PhoneNumber = p_phone, MemberType = p_member_type WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE DeleteBook(IN p_book_id BIGINT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = p_book_id) THEN SET p_error_message = 'Book ID does not exist.'; ELSE DELETE FROM Books WHERE BookID = p_book_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE DeleteMember(IN p_member_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id) THEN SET p_error_message = 'Member ID does not exist.'; ELSE DELETE FROM Members WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END",
-                "CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryFilter VARCHAR(255), IN genreFilter VARCHAR(255), IN statusFilter VARCHAR(255), IN sortColumn VARCHAR(255), IN sortOrder VARCHAR(4)) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT BookID, Title, Author, CategoryCode, GenreCode, Status FROM Books WHERE 1=1'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Title LIKE ''%', searchTitle, '%'''); END IF; IF searchAuthor IS NOT NULL AND searchAuthor <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Author LIKE ''%', searchAuthor, '%'''); END IF; IF categoryFilter IS NOT NULL AND categoryFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryCode = ''', categoryFilter, ''''); END IF; IF genreFilter IS NOT NULL AND genreFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreCode = ''', genreFilter, ''''); END IF; IF statusFilter IS NOT NULL AND statusFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Status = ''', statusFilter, ''''); END IF; IF sortColumn IS NOT NULL AND sortColumn <> '' THEN SET finalQuery = CONCAT(finalQuery, ' ORDER BY ', sortColumn); IF sortOrder IS NOT NULL AND sortOrder <> '' THEN SET finalQuery = CONCAT(finalQuery, ' ', sortOrder); END IF; END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                "CREATE PROCEDURE `SearchFilterSortBooks`(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryFilter VARCHAR(255), IN genreFilter VARCHAR(255), IN statusFilter VARCHAR(255)) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Books WHERE 1=1'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND (Title LIKE ''%', searchTitle, '%'' OR Author LIKE ''%', searchTitle, '%'')');END IF; IF categoryFilter IS NOT NULL AND categoryFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryCode LIKE ''%', categoryFilter, '%'''); END IF; IF genreFilter IS NOT NULL AND genreFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreCode LIKE ''%', genreFilter, '%'''); END IF; IF statusFilter IS NOT NULL AND statusFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Status LIKE ''%', statusFilter, '%'''); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
                 "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN memberTypeFilter VARCHAR(50), IN sortColumn VARCHAR(255), IN sortOrder VARCHAR(4)) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT MemberID, Name, Email, PhoneNumber, MemberType FROM Members WHERE 1=1'; IF searchName IS NOT NULL AND searchName <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Name LIKE ''%', searchName, '%'''); END IF; IF searchEmail IS NOT NULL AND searchEmail <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Email LIKE ''%', searchEmail, '%'''); END IF; IF searchPhone IS NOT NULL AND searchPhone <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND PhoneNumber LIKE ''%', searchPhone, '%'''); END IF; IF memberTypeFilter IS NOT NULL AND memberTypeFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND MemberType = ''', memberTypeFilter, ''''); END IF; IF sortColumn IS NOT NULL AND sortColumn <> '' THEN SET finalQuery = CONCAT(finalQuery, ' ORDER BY ', sortColumn); IF sortOrder IS NOT NULL AND sortOrder <> '' THEN SET finalQuery = CONCAT(finalQuery, ' ', sortOrder); END IF; END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END"
         };
         try (Statement statement = connection.createStatement()) {
@@ -174,52 +174,45 @@ public class DatabaseConnection {
         return status;
     }
 
-    public void viewBooksWithFilters() {
+    public List<Book> viewBooksWithFilters(String searchTitle, String searchAuthor,
+                                           String categoryFilter, String genreFilter,
+                                           String statusFilter) {
+        List<Book> filteredbooks = new ArrayList<>();
         try {
-            // User input for filters
-            System.out.print("Search by Title (leave blank if none): ");
-            String searchTitle = scanner.nextLine();
-
-            System.out.print("Search by Author (leave blank if none): ");
-            String searchAuthor = scanner.nextLine();
-
-            System.out.print("Filter by Category Code (leave blank if none): ");
-            String categoryFilter = scanner.nextLine();
-
-            System.out.print("Filter by Genre Code (leave blank if none): ");
-            String genreFilter = scanner.nextLine();
-
-            System.out.print("Filter by Status (leave blank if none): ");
-            String statusFilter = scanner.nextLine();
-
-            System.out.print("Sort Column (Title, Author, etc.): ");
-            String sortColumn = scanner.nextLine();
-
-            System.out.print("Sort Order (ASC/DESC): ");
-            String sortOrder = scanner.nextLine();
+            System.out.println("Params: " + searchTitle + ", " + searchAuthor + ", " + categoryFilter + ", " + genreFilter + ", " + statusFilter);
 
             // Prepare stored procedure call
-            String sql = "{CALL SearchFilterSortBooks(?, ?, ?, ?, ?, ?, ?)}";
+            String sql = "{CALL SearchFilterSortBooks(?, ?, ?, ?, ?)}";
             try (CallableStatement stmt = connection.prepareCall(sql)) {
-                stmt.setString(1, searchTitle.isEmpty() ? null : searchTitle);
-                stmt.setString(2, searchAuthor.isEmpty() ? null : searchAuthor);
-                stmt.setString(3, categoryFilter.isEmpty() ? null : categoryFilter);
-                stmt.setString(4, genreFilter.isEmpty() ? null : genreFilter);
-                stmt.setString(5, statusFilter.isEmpty() ? null : statusFilter);
-                stmt.setString(6, sortColumn.isEmpty() ? null : sortColumn);
-                stmt.setString(7, sortOrder.isEmpty() ? null : sortOrder);
+                stmt.setString(1, searchTitle);
+                stmt.setString(2,  searchAuthor);
+                stmt.setString(3,  categoryFilter);
+                stmt.setString(4, genreFilter);
+                stmt.setString(5, statusFilter);
+
 
                 // Execute and display results
                 try (ResultSet rs = stmt.executeQuery()) {
+
+                    while (rs.next()) {
+                        int id = rs.getInt("BookID");
+                        String title = rs.getString("Title");
+                        String author = rs.getString("Author");
+                        String category = rs.getString("CategoryCode");
+                        String genre = rs.getString("GenreCode");
+                        String status = rs.getString("Status");
+                        filteredbooks.add(new Book(id, title, author, category, genre, status));
+                    }
                     displayResultSet(rs);
                 }
             }
         } catch (SQLException e) {
             System.err.println("View books error: " + e.getMessage());
         }
-    }
 
-    String[] titleList;
+        System.out.println(filteredbooks);
+        return filteredbooks;
+    }
 
     public void displayResultSet(ResultSet rs) throws SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
@@ -265,6 +258,26 @@ public class DatabaseConnection {
                 book.genreProperty().get(),
                 book.statusProperty().get()
         );
+    }
+
+    public static void deleteBookById(long bookId) throws SQLException {
+        String sp = "{CALL DeleteBook(?,?)}";
+
+        try(CallableStatement stmt = connection.prepareCall("{CALL DeleteBook(?,?)}")) {
+            stmt.setLong(1, bookId);
+            stmt.registerOutParameter(2,Types.VARCHAR);
+            stmt.execute();
+
+            String errorMessage = stmt.getString(2);
+            if (errorMessage != null) {
+                System.out.println("Error: " + errorMessage);
+                // Optionally show an alert here
+            } else {
+                System.out.println("Book deleted successfully.");
+            }
+        }catch (SQLException e){
+            logger.log(Level.SEVERE, "Error deleting book");
+        }
     }
 
 
