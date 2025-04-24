@@ -1,12 +1,10 @@
 package com.mimirlib.mimir.Controller;
 
-import com.mimirlib.mimir.Data.Book;
 import com.mimirlib.mimir.Data.DatabaseConnection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
@@ -16,8 +14,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class AddModalController {
-    private static final Logger logger = Logger.getLogger(AddModalController.class.getName());
+public class AddBookController {
+    private static final Logger logger = Logger.getLogger(AddBookController.class.getName());
     DatabaseConnection dbasecon = new DatabaseConnection();
     @FXML
     private TextField titlefld;

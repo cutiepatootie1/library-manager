@@ -1,6 +1,5 @@
 package com.mimirlib.mimir.Controller;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
@@ -68,6 +67,8 @@ public class BookController {
     @FXML
     private ChoiceBox<String> statusBox;
 
+    // Table names
+    private String book = "bookstatus";
 
     @FXML
     public void initialize() throws SQLException {
@@ -116,7 +117,7 @@ public class BookController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/addBook.fxml"));
             Parent root = loader.load();
 
-            AddModalController modalController = loader.getController();
+            AddBookController modalController = loader.getController();
             modalController.initializeGenre();
             modalController.initializeCats();
 
@@ -164,7 +165,7 @@ public class BookController {
         extBookTable.setEditable(true);
         List<String> catList = dbasecon.getAllCategories();
         List<String> genList = dbasecon.getAllGenre();
-        List<String> statusList = dbasecon.getAllStatus();
+        List<String> statusList = dbasecon.getAllStatus(book);
 
 
         ObservableList<String> categories = FXCollections.observableArrayList(catList);
@@ -220,7 +221,7 @@ public class BookController {
         if (selectedItem != null){
             long selectedId = selectedItem.getId();
             System.out.println("selected id:" + selectedId);
-            DatabaseConnection.deleteBookById(selectedId);
+            dbasecon.deleteBookById(selectedId);
             refreshTables();
         }
     }
@@ -272,7 +273,7 @@ public class BookController {
     }
 
     public void initializeStatus() throws SQLException{
-        List<String> statList = dbasecon.getAllStatus();
+        List<String> statList = dbasecon.getAllStatus(book);
 
         ObservableList<String> genres = FXCollections.observableArrayList(statList);
         System.out.println("Genre List is null: " + (statusBox == null));  // Debugging line

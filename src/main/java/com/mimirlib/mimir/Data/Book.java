@@ -8,13 +8,12 @@ import javafx.beans.property.StringProperty;
 
 public class Book extends DatabaseConnection {
 
-    private final SimpleIntegerProperty id;
+    private final SimpleIntegerProperty id  ;
     private final SimpleStringProperty title;
     private final SimpleStringProperty category;
     private final SimpleStringProperty author;
     private final SimpleStringProperty genre;
     private final SimpleStringProperty status;
-
 
     public Book(int id,String title, String author, String category, String genre, String status) {
         this.id = new SimpleIntegerProperty(id);
@@ -24,7 +23,6 @@ public class Book extends DatabaseConnection {
         this.genre =  new SimpleStringProperty(genre);
         this.status =  new SimpleStringProperty(status);
     }
-
 
     public IntegerProperty idProperty(){return id;}
     public StringProperty titleProperty(){return title;}
@@ -36,15 +34,12 @@ public class Book extends DatabaseConnection {
     public void setBookID(int id){
         this.id.set(id);
     }
-
     public void setTitle(String title){
         this.title.set(title);
     }
-
     public void setAuthor(String author){
         this.author.set(author);
     }
-
     public void setCategory(String category){
         this.category.set(category);
     }
@@ -61,6 +56,4 @@ public class Book extends DatabaseConnection {
     public String getCategory(){return category.get();}
     public String getGenre(){return genre.get();}
     public String getStatus(){return status.get();}
-
-
 }
