@@ -1,7 +1,5 @@
 package com.mimirlib.mimir.Data;
 
-import com.mimirlib.mimir.HelloApplication;
-
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
@@ -11,10 +9,6 @@ public class DatabaseConnection {
 
     static Scanner scanner = new Scanner(System.in);
     static Connection connection;
-    static Statement statement;
-    static PreparedStatement preparedStatement;
-    static ResultSet resultSet;
-    static HelloApplication m = new HelloApplication();
     private static final Logger logger = Logger.getLogger(DatabaseConnection.class.getName());
 
     private final String databaseName = "library_db";
@@ -90,7 +84,7 @@ public class DatabaseConnection {
                 "CREATE PROCEDURE InsertBook(IN bookTitle VARCHAR(255), IN bookAuthor VARCHAR(255), IN categoryCode VARCHAR(50), IN genreCode VARCHAR(50), IN statusName VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM BookCategories WHERE CategoryCode = categoryCode) THEN SET p_error_message = 'Invalid category code.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookGenres WHERE GenreCode = genreCode) THEN SET p_error_message = 'Invalid genre code.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE Status = statusName) THEN SET p_error_message = 'Invalid book status.'; ELSEIF EXISTS (SELECT 1 FROM Books WHERE Title = bookTitle AND Author = bookAuthor) THEN SET p_error_message = 'Book already exists.'; ELSE INSERT INTO Books (Title, Author, CategoryCode, GenreCode, Status) VALUES (bookTitle, bookAuthor, categoryCode, genreCode, statusName); SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE UpdateBook(IN p_book_id BIGINT, IN p_title VARCHAR(255), IN p_author VARCHAR(255), IN p_category_code VARCHAR(50), IN p_genre_code VARCHAR(50), IN p_status VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = p_book_id LIMIT 1) THEN SET p_error_message = 'Book ID does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookCategories WHERE CategoryCode = p_category_code LIMIT 1) THEN SET p_error_message = 'Category Code does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookGenres WHERE GenreCode = p_genre_code LIMIT 1) THEN SET p_error_message = 'Genre Code does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE Status = p_status LIMIT 1) THEN SET p_error_message = 'Invalid book status.'; ELSE UPDATE Books SET Title = p_title, Author = p_author, CategoryCode = p_category_code, GenreCode = p_genre_code, Status = p_status WHERE BookID = p_book_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE InsertMember(IN memberName VARCHAR(255), IN memberEmail VARCHAR(255), IN memberPhone VARCHAR(15), IN memberType VARCHAR(50), IN status VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF EXISTS (SELECT 1 FROM Members WHERE Name = memberName AND Email = memberEmail) THEN SET p_error_message = 'Member already exists.'; ELSE INSERT INTO Members (Name, Email, PhoneNumber, MemberType, Status) VALUES (memberName, memberEmail, memberPhone, memberType, status); SET p_error_message = NULL; END IF; END",
-                "CREATE PROCEDURE UpdateMember(IN p_member_id INT, IN p_name VARCHAR(255), IN p_email VARCHAR(255), IN p_phone VARCHAR(15), IN p_member_type VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id LIMIT 1) THEN SET p_error_message = 'Member ID does not exist.'; ELSE UPDATE Members SET Name = p_name, Email = p_email, PhoneNumber = p_phone, MemberType = p_member_type WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END",
+                "CREATE PROCEDURE UpdateMember(IN p_member_id INT, IN p_name VARCHAR(255), IN p_email VARCHAR(255), IN p_phone VARCHAR(15), IN p_member_type VARCHAR(50), IN p_status VARCHAR(50), OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id LIMIT 1) THEN SET p_error_message = 'Member ID does not exist.'; ELSE UPDATE Members SET Name = p_name, Email = p_email, PhoneNumber = p_phone, MemberType = p_member_type, Status = p_status WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE DeleteBook(IN p_book_id BIGINT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = p_book_id) THEN SET p_error_message = 'Book ID does not exist.'; ELSE DELETE FROM Books WHERE BookID = p_book_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE DeleteMember(IN p_member_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id) THEN SET p_error_message = 'Member ID does not exist.'; ELSE DELETE FROM Members WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE `SearchFilterSortBooks`(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryFilter VARCHAR(255), IN genreFilter VARCHAR(255), IN statusFilter VARCHAR(255)) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Books WHERE 1=1'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND (Title LIKE ''%', searchTitle, '%'' OR Author LIKE ''%', searchTitle, '%'')');END IF; IF categoryFilter IS NOT NULL AND categoryFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryCode LIKE ''%', categoryFilter, '%'''); END IF; IF genreFilter IS NOT NULL AND genreFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreCode LIKE ''%', genreFilter, '%'''); END IF; IF statusFilter IS NOT NULL AND statusFilter <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND Status LIKE ''%', statusFilter, '%'''); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
@@ -151,7 +145,7 @@ public class DatabaseConnection {
         return members;
     }
 
-    public List<String> getAllCategories() throws SQLException{
+    public List<String> getAllCategories() {
         List<String> categories = new ArrayList<>();
 
         try(CallableStatement stmt = connection.prepareCall("{CALL GetAllCategories()}");
@@ -171,7 +165,7 @@ public class DatabaseConnection {
         return categories;
     }
 
-    public List<String> getAllGenre() throws SQLException{
+    public List<String> getAllGenre() {
         List<String> genre = new ArrayList<>();
 
         try(CallableStatement stmt = connection.prepareCall("{CALL GetAllGenres()}");
@@ -217,7 +211,7 @@ public class DatabaseConnection {
         return statusList;
     }
 
-    public List<String> getAllRoles() throws SQLException{
+    public List<String> getAllRoles() {
         List<String> roleList = new ArrayList<>();
 
         try(CallableStatement stmt = connection.prepareCall("{CALL GetAllRoles()}");
@@ -326,23 +320,17 @@ public class DatabaseConnection {
 
     // EXTRAS. NOT RLLY NEEDED
     public void bookInput(boolean isUpdate, String title, String author, String categoryCode, String genreCode,String status) {
-        long bookID = isUpdate ? inputID("Books") : 0;
+        long bookID = isUpdate ? inputID() : 0;
 
         executeBookProcedure(isUpdate, bookID, title, author, categoryCode, genreCode, status);
 
-//        if (confirmAction(isUpdate, "book")) {
-//            executeBookProcedure(isUpdate, bookID, title, author, categoryCode, genreCode, status);
-//        }
     }
 
     public void memberInput(boolean isUpdate, String name, String email, String contactNum, String role, String status) {
-        long memberID = isUpdate ? inputID("Books") : 0;
+        long memberID = isUpdate ? inputID() : 0;
 
         executeMemberProcedure(isUpdate, memberID, name, email, contactNum, role, status);
 
-//        if (confirmAction(isUpdate, "book")) {
-//            executeBookProcedure(isUpdate, bookID, title, author, categoryCode, genreCode, status);
-//        }
     }
 
     public void updateBook(Book book){
@@ -367,8 +355,7 @@ public class DatabaseConnection {
         );
     }
 
-    public static void deleteBookById(long bookId) throws SQLException {
-        String sp = "{CALL DeleteBook(?,?)}";
+    public static void deleteBookById(long bookId) {
 
         try(CallableStatement stmt = connection.prepareCall("{CALL DeleteBook(?,?)}")) {
             stmt.setLong(1, bookId);
@@ -387,8 +374,7 @@ public class DatabaseConnection {
         }
     }
 
-    public static void deleteMemberById(long memberId) throws SQLException {
-        String sp = "{CALL DeleteMember(?,?)}";
+    public static void deleteMemberById(long memberId) {
 
         try(CallableStatement stmt = connection.prepareCall("{CALL DeleteMember(?,?)}")) {
             stmt.setLong(1, memberId);
@@ -446,15 +432,14 @@ public class DatabaseConnection {
         }
     }
 
-    // Below are not used methods
-    private int inputID(String tableName) {
+    private int inputID() {
         int id = 0;
         boolean validID = false;
         while (!validID) {
-            System.out.print("Enter " + tableName + " ID: ");
+            System.out.print("Enter " + "Books" + " ID: ");
             id = scanner.nextInt();
             scanner.nextLine();
-            if (idExists(tableName, id)) {
+            if (idExists(id)) {
                 validID = true;
             } else {
                 System.out.println("Invalid ID.");
@@ -463,8 +448,8 @@ public class DatabaseConnection {
         return id;
     }
 
-    private boolean idExists(String tableName, int id) {
-        String query = "SELECT COUNT(*) FROM " + tableName + " WHERE " + (tableName.equals("Books") ? "BookID" : "MemberID") + " = ?";
+    private boolean idExists(int id) {
+        String query = "SELECT COUNT(*) FROM " + "Books" + " WHERE " + ("Books".equals("Books") ? "BookID" : "MemberID") + " = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();

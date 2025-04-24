@@ -8,7 +8,6 @@ import java.util.logging.Logger;
 import com.mimirlib.mimir.Data.Book;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 
 
 import com.mimirlib.mimir.Data.DatabaseConnection;
@@ -26,13 +25,10 @@ import javafx.stage.Stage;
 
 public class BookController {
     private static final Logger logger = Logger.getLogger(BookController.class.getName());
-    private Stage stage;
-    private Scene scene;
-    private Parent root;
 
     DatabaseConnection dbasecon = new DatabaseConnection();
 
-    public BookController() throws SQLException {
+    public BookController() {
     }
 
     //INITIALIZE SHIT HERE
@@ -121,7 +117,7 @@ public class BookController {
             modalController.initializeGenre();
             modalController.initializeCats();
 
-            stage = new Stage();
+            Stage stage = new Stage();
             stage.setTitle("New book");
             stage.setScene(new Scene(root));
             stage.initModality(Modality.WINDOW_MODAL); // Block input to parent window
@@ -216,18 +212,18 @@ public class BookController {
     }
 
     @FXML
-    public void deleteBook(ActionEvent event)throws SQLException{
+    public void deleteBook()throws SQLException{
         Book selectedItem = mainTable.getSelectionModel().getSelectedItem();
         if (selectedItem != null){
             long selectedId = selectedItem.getId();
             System.out.println("selected id:" + selectedId);
-            dbasecon.deleteBookById(selectedId);
+            DatabaseConnection.deleteBookById(selectedId);
             refreshTables();
         }
     }
 
     @FXML
-    public void filterBooks(ActionEvent event){
+    public void filterBooks(){
         String searchTitle = searchFld.getText();
         String searchAuthor = searchFld.getText();
         String categoryFilter = categoryBox.getValue() != null ? categoryBox.getValue().split(" ")[0] : "";
@@ -243,7 +239,7 @@ public class BookController {
 
     }
 
-    public void initializeCats() throws SQLException {
+    public void initializeCats() {
         List<String> catList = dbasecon.getAllCategories();
 
 
@@ -258,7 +254,7 @@ public class BookController {
 
     }
 
-    public void initializeGenre() throws SQLException{
+    public void initializeGenre() {
         List<String> genList = dbasecon.getAllGenre();
 
         ObservableList<String> genres = FXCollections.observableArrayList(genList);
@@ -286,9 +282,5 @@ public class BookController {
 
     }
 
-
-    /**
-     * EVENT HANDLERS
-    */
 
 }

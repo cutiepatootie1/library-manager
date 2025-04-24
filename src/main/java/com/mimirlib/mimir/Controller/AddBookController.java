@@ -10,12 +10,14 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Logger;
 
 public class AddBookController {
-    private static final Logger logger = Logger.getLogger(AddBookController.class.getName());
+    static {
+        Logger.getLogger(AddBookController.class.getName());
+    }
+
     DatabaseConnection dbasecon = new DatabaseConnection();
     @FXML
     private TextField titlefld;
@@ -27,7 +29,7 @@ public class AddBookController {
     private ChoiceBox<String> genreBox;
 
     @FXML
-    public void initializeCats() throws SQLException {
+    public void initializeCats() {
         List<String> catList = dbasecon.getAllCategories();
 
 
@@ -43,7 +45,7 @@ public class AddBookController {
     }
 
     @FXML
-    public void initializeGenre() throws SQLException{
+    public void initializeGenre() {
         List<String> genList = dbasecon.getAllGenre();
 
         ObservableList<String> genres = FXCollections.observableArrayList(genList);
@@ -58,7 +60,7 @@ public class AddBookController {
     }
 
     @FXML
-    private void addProcess(ActionEvent event) throws SQLException {
+    private void addProcess(ActionEvent event) {
 
         String title = titlefld.getText();
         String author = authorfld.getText();

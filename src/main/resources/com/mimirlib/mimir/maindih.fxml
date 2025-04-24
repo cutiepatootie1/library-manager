@@ -6,13 +6,11 @@
 
 <BorderPane fx:id="contentArea" prefHeight="695.0" prefWidth="1269.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mimirlib.mimir.Controller.MainController">
    <top>
-      <ToolBar prefHeight="40.0" prefWidth="810.0" BorderPane.alignment="CENTER">
-        <items>
-          <Button mnemonicParsing="false" text="Home" />
-            <Button layoutX="10.0" layoutY="13.0" mnemonicParsing="false" onAction="#showBooks" text="Books" />
-            <Button layoutX="63.0" layoutY="13.0" mnemonicParsing="false" onAction="#showMembers" text="People" />
-            <Button layoutX="115.0" layoutY="13.0" mnemonicParsing="false" text="Logs" />
-        </items>
-      </ToolBar>
+       <ToolBar prefHeight="40.0" prefWidth="810.0" BorderPane.alignment="CENTER">
+           <Button mnemonicParsing="false" text="Home"/>
+           <Button layoutX="10.0" layoutY="13.0" mnemonicParsing="false" onAction="#showBooks" text="Books"/>
+           <Button layoutX="63.0" layoutY="13.0" mnemonicParsing="false" onAction="#showMembers" text="People"/>
+           <Button layoutX="115.0" layoutY="13.0" mnemonicParsing="false" text="Logs"/>
+       </ToolBar>
    </top>
 </BorderPane>
