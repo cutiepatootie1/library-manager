@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mimirlib.mimir.Controller.AddMemController">
+   <center>
+      <AnchorPane prefHeight="400.0" prefWidth="600.0">
+         <Text layoutX="36.0" layoutY="58.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Member Registration" wrappingWidth="176.5914306640625">
+            <font>
+               <Font size="18.0" />
+            </font>
+         </Text>
+         <TextField fx:id="namefld" layoutX="178.0" layoutY="100.0" prefHeight="39.0" prefWidth="341.0" promptText="necessary field">
+            <font>
+               <Font size="14.0" />
+            </font>
+         </TextField>
+         <TextField fx:id="emailfld" layoutX="178.0" layoutY="151.0" prefHeight="39.0" prefWidth="337.0" promptText="optional">
+            <font>
+               <Font size="14.0" />
+            </font>
+         </TextField>
+         <Text layoutX="109.0" layoutY="126.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Name" wrappingWidth="51.59136962890625">
+            <font>
+               <Font name="System Bold" size="18.0" />
+            </font>
+         </Text>
+         <Text layoutX="112.0" layoutY="177.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Email">
+            <font>
+               <Font name="System Bold" size="18.0" />
+            </font>
+         </Text>
+         <Text layoutX="124.0" layoutY="277.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Role" textAlignment="RIGHT">
+            <font>
+               <Font name="System Bold" size="18.0" />
+            </font>
+         </Text>
+         <Button layoutX="340.0" layoutY="332.0" mnemonicParsing="false" onAction="#addProcess" prefHeight="36.0" prefWidth="73.0" text="Confirm" />
+         <Button layoutX="442.0" layoutY="332.0" mnemonicParsing="false" onAction="#handleClose" prefHeight="36.0" prefWidth="73.0" text="Back" />
+         <ChoiceBox fx:id="roleBox" layoutX="178.0" layoutY="258.0" prefHeight="25.0" prefWidth="199.0" />
+         <TextField fx:id="contactNumfld" layoutX="178.0" layoutY="201.0" prefHeight="39.0" prefWidth="337.0" promptText="optional">
+            <font>
+               <Font size="14.0" />
+            </font>
+         </TextField>
+         <Text layoutX="79.0" layoutY="227.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Contact #">
+            <font>
+               <Font name="System Bold" size="18.0" />
+            </font>
+         </Text>
+      </AnchorPane>
+   </center>
+</BorderPane>
