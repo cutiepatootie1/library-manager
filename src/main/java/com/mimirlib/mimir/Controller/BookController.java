@@ -68,7 +68,7 @@ public class BookController {
     private ChoiceBox<String> statusBox;
 
     // Table names
-    private String book = "bookstatus";
+    private final String book = "bookstatus";
 
     @FXML
     public void initialize() throws SQLException {

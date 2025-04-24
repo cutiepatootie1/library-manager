@@ -1,23 +1,16 @@
 package com.mimirlib.mimir;
 
-import com.mimirlib.mimir.Controller.BookController;
 import com.mimirlib.mimir.Data.DatabaseConnection;
 import javafx.application.Application;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.image.Image;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class HelloApplication extends Application {
 
@@ -26,7 +19,7 @@ public class HelloApplication extends Application {
         Image icon = new Image("file:src/asset/icon.png");
         //group node shit
        //Group root = new Group();
-        Parent root = FXMLLoader.load(getClass().getResource("maindih.fxml"));
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("maindih.fxml")));
         //scene customizations
         Scene scene = new Scene(root);
         stage.getIcons().add(icon);
