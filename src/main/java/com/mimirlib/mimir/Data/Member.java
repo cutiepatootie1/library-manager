@@ -20,9 +20,10 @@ public class Member extends DatabaseConnection {
         this.status = new SimpleStringProperty(memStatus);
     }
 
+    public int getId() {return id.get();}
+
     /**
     // Getters
-    public int getId() {return id.get();}
     public String getName() {return name.get();}
     public String getEmail() {return email.get();}
     public String getContactNum() {return contactNum.get();}

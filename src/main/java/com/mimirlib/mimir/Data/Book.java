@@ -51,11 +51,12 @@ public class Book extends DatabaseConnection {
         this.status.set(status);
     }
 
-    public long getId(){ return id.get();}
+
     public String getTitle(){return title.get();}
     public String getAuthor(){return author.get();}
     public String getCategory(){return category.get();}
     public String getGenre(){return genre.get();}
     public String getStatus(){return status.get();}
      **/
+    public long getId(){ return id.get();}
 }
