@@ -20,6 +20,7 @@ public class Member extends DatabaseConnection {
         this.status = new SimpleStringProperty(memStatus);
     }
 
+    /**
     // Getters
     public int getId() {return id.get();}
     public String getName() {return name.get();}
@@ -35,6 +36,7 @@ public class Member extends DatabaseConnection {
     public void setContactNum(String memContactNum) {contactNum.set(memContactNum);}
     public void setRole(String memRole) {role.set(memRole);}
     public void setStatus(String memStatus) {status.set(memStatus);}
+**/
 
     // Property Getters (for use in JavaFX bindings)
     public SimpleIntegerProperty idProperty() {return id;}

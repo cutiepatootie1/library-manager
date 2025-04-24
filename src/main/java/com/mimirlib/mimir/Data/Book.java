@@ -31,6 +31,7 @@ public class Book extends DatabaseConnection {
     public StringProperty genreProperty(){return genre;}
     public StringProperty statusProperty(){return status;}
 
+    /**
     public void setBookID(int id){
         this.id.set(id);
     }
@@ -56,4 +57,5 @@ public class Book extends DatabaseConnection {
     public String getCategory(){return category.get();}
     public String getGenre(){return genre.get();}
     public String getStatus(){return status.get();}
+     **/
 }
