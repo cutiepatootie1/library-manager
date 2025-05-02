@@ -11,4 +11,5 @@ module com.mimirlib.mimir {
     exports com.mimirlib.mimir;
     exports com.mimirlib.mimir.Controller;
     opens com.mimirlib.mimir.Controller to javafx.fxml;
+    opens com.mimirlib.mimir.Data to javafx.base;
 }
