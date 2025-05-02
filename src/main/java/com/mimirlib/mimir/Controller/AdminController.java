@@ -137,7 +137,7 @@ public class AdminController {
     }
 
     private void loadBookStatusData() {
-        List<BookStatus> statuses = dbasecon.getBookAndTransactStatuses();
+        List<BookStatus> statuses = dbasecon.getBookStatuses();
         BookStatusTable.setItems(FXCollections.observableArrayList(statuses));
     }
 
@@ -199,7 +199,7 @@ public class AdminController {
             bookStatusCol.setOnEditCommit(event -> {
                 BookStatus updatedStatus = event.getRowValue();
                 updatedStatus.statusProperty().set(event.getNewValue());
-                dbasecon.updateBookStatus(updatedStatus);
+                dbasecon.updateBookStatus(updatedStatus, "BOOK");
                 refreshTables();
             });
 
@@ -215,7 +215,7 @@ public class AdminController {
             memberStatusCol.setOnEditCommit(event -> {
                 MemberStatus updatedStatus = event.getRowValue();
                 updatedStatus.setStatus(event.getNewValue());
-                dbasecon.updateMemberStatus(updatedStatus);
+                dbasecon.updateMemberStatus(updatedStatus, "MEMBER");
                 refreshTables();
             });
 

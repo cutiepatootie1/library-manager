@@ -1,8 +1,6 @@
 package com.mimirlib.mimir.Controller;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
@@ -117,15 +115,8 @@ public class BookController {
         mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
                 extBookTable.setItems(FXCollections.observableArrayList(newSel));
-
-                try {
-                    boolean isBorrowed = isBookCurrentlyBorrowed(newSel.getId());
-                    borrowBtn.setDisable(isBorrowed); // Disable borrow if book is already borrowed
-                    deleteBtn.setDisable(isBorrowed); // Disable delete if book is currently borrowed
-                } catch (SQLException e) {
-                    logger.log(Level.SEVERE, "Error checking borrow status", e);
-                }
-
+                borrowBtn.setDisable(false);
+                deleteBtn.setDisable(false);
                 resetBtn.setDisable(false);
             } else {
                 extBookTable.getItems().clear();
@@ -425,16 +416,6 @@ public class BookController {
             }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error showing member selection", e);
-        }
-    }
-
-    public boolean isBookCurrentlyBorrowed(int bookId) throws SQLException {
-        String query = "SELECT 1 FROM Borrowing WHERE BookID = ? AND ReturnDate IS NULL LIMIT 1";
-        try (PreparedStatement stmt = dbasecon.getConnection().prepareStatement(query)) {
-            stmt.setInt(1, bookId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // Returns true if book is borrowed and not returned
-            }
         }
     }
 

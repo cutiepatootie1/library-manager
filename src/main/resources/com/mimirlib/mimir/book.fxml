@@ -30,6 +30,11 @@
             </AnchorPane>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="782.0">
                <children>
+                  <Button fx:id="returnBtn" layoutX="332.0" layoutY="158.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="110.0" text="RETURN">
+                     <font>
+                        <Font size="18.0" />
+                     </font>
+                  </Button>
                   <Button fx:id="deleteBtn" layoutX="455.0" layoutY="158.0" mnemonicParsing="false" onAction="#deleteBook" prefHeight="32.0" prefWidth="110.0" text="DELETE">
                      <font>
                         <Font size="18.0" />
@@ -79,7 +84,7 @@
                         <Font size="18.0" />
                      </font>
                   </Button>
-                  <Button fx:id="addBtn" layoutX="332.0" layoutY="158.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="110.0" text="ADD">
+                  <Button fx:id="addBtn1" layoutX="209.0" layoutY="158.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="110.0" text="ADD">
                      <font>
                         <Font size="18.0" />
                      </font>

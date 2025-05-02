@@ -35,10 +35,6 @@ public class DatabaseConnection {
         }
     }
 
-    public Connection getConnection() {
-        return connection;
-    }
-
     public void closeConnection() {
         try {
             if (connection != null && !connection.isClosed()) {
@@ -61,12 +57,12 @@ public class DatabaseConnection {
         String[] tableQueries = {
                 "CREATE TABLE IF NOT EXISTS BookCategories (CategoryID INT PRIMARY KEY AUTO_INCREMENT, CategoryCode VARCHAR(10) NOT NULL, CategoryName VARCHAR(255) NOT NULL, Deleted BOOLEAN DEFAULT FALSE);",
                 "CREATE TABLE IF NOT EXISTS BookGenres (GenreID INT PRIMARY KEY AUTO_INCREMENT, GenreCode VARCHAR(10) NOT NULL, GenreName VARCHAR(255) NOT NULL, Deleted BOOLEAN DEFAULT FALSE);",
-                "CREATE TABLE IF NOT EXISTS BookStatus (Status VARCHAR(50) NOT NULL, StatusID INT PRIMARY KEY AUTO_INCREMENT, Deleted BOOLEAN DEFAULT FALSE, Transaction BOOLEAN DEFAULT FALSE); ",
+                "CREATE TABLE IF NOT EXISTS BookStatus (Status VARCHAR(50) NOT NULL, StatusID INT PRIMARY KEY AUTO_INCREMENT, Deleted BOOLEAN DEFAULT FALSE); ",
                 "CREATE TABLE IF NOT EXISTS MemberRoles (Role VARCHAR(50) NOT NULL, RoleID INT PRIMARY KEY AUTO_INCREMENT, Deleted BOOLEAN DEFAULT FALSE); ",
                 "CREATE TABLE IF NOT EXISTS MemberStatus (Status VARCHAR(50) NOT NULL, StatusID INT PRIMARY KEY AUTO_INCREMENT, Deleted BOOLEAN DEFAULT FALSE);",
                 "CREATE TABLE IF NOT EXISTS Books (BookID INT PRIMARY KEY AUTO_INCREMENT, Title VARCHAR(255) NOT NULL, Author VARCHAR(255), Quantity INT, CategoryID INT NOT NULL, GenreID INT NOT NULL, StatusID INT NOT NULL, Deleted BOOLEAN DEFAULT FALSE, FOREIGN KEY (CategoryID) REFERENCES BookCategories(CategoryID) ON UPDATE CASCADE, FOREIGN KEY (GenreID) REFERENCES BookGenres(GenreID) ON UPDATE CASCADE, FOREIGN KEY (StatusID) REFERENCES BookStatus(StatusID) ON UPDATE CASCADE);",
                 "CREATE TABLE IF NOT EXISTS Members (MemberID INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(255) NOT NULL, Email VARCHAR(255), PhoneNumber VARCHAR(15), RoleID INT NOT NULL, StatusID INT NOT NULL, Deleted BOOLEAN DEFAULT FALSE, FOREIGN KEY (RoleID) REFERENCES MemberRoles(RoleID) ON UPDATE CASCADE, FOREIGN KEY (StatusID) REFERENCES MemberStatus(StatusID) ON UPDATE CASCADE);",
-                "CREATE TABLE IF NOT EXISTS Borrowing (BorrowID INT PRIMARY KEY AUTO_INCREMENT, BookID INT NOT NULL, MemberID INT NOT NULL, BorrowDate DATE NOT NULL, DueDate DATE NOT NULL, ReturnDate DATE, StatusID INT NOT NULL, FOREIGN KEY (BookID) REFERENCES Books(BookID), FOREIGN KEY (MemberID) REFERENCES Members(MemberID), FOREIGN KEY (StatusID) REFERENCES BookStatus(StatusID))"
+                "CREATE TABLE IF NOT EXISTS Borrowing (BorrowID INT PRIMARY KEY AUTO_INCREMENT, BookID INT NOT NULL, MemberID INT NOT NULL, BorrowDate DATE NOT NULL, DueDate DATE NOT NULL, ReturnDate DATE, FOREIGN KEY (BookID) REFERENCES Books(BookID), FOREIGN KEY (MemberID) REFERENCES Members(MemberID))"
         };
 
         try (Statement statement = connection.createStatement()) {
@@ -97,7 +93,6 @@ public class DatabaseConnection {
                 "DROP PROCEDURE IF EXISTS UpdateMember",
                 "DROP PROCEDURE IF EXISTS UpdateBorrowReturnDate",
                 "DROP PROCEDURE IF EXISTS UpdateBookStatus",
-                "DROP PROCEDURE IF EXISTS UpdateTransactionStatus",
                 "DROP PROCEDURE IF EXISTS UpdateBookCategory",
                 "DROP PROCEDURE IF EXISTS UpdateBookGenre",
                 "DROP PROCEDURE IF EXISTS UpdateMemberRole",
@@ -112,9 +107,9 @@ public class DatabaseConnection {
                 "CREATE PROCEDURE GetAllGenres() BEGIN SELECT GenreID, GenreCode, GenreName FROM BookGenres WHERE Deleted = FALSE; END",
                 "CREATE PROCEDURE GetAllCategories() BEGIN SELECT CategoryID, CategoryCode, CategoryName FROM BookCategories WHERE Deleted = FALSE; END",
                 //"CREATE PROCEDURE GetAllStatus(IN entityType VARCHAR(50)) BEGIN IF entityType = 'bookstatus' THEN SELECT StatusID, Status FROM BookStatus WHERE Deleted = FALSE; ELSEIF entityType = 'memberstatus' THEN SELECT StatusID, Status FROM MemberStatus WHERE Deleted = FALSE; ELSE SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid entity type'; END IF; END",
-                "CREATE PROCEDURE GetAllStatus(IN entityType VARCHAR(50)) BEGIN IF entityType = 'bookstatus' THEN SELECT StatusID, Status FROM BookStatus WHERE Deleted = FALSE AND Transaction = FALSE; ELSEIF entityType = 'transactionstatus' THEN SELECT StatusID, Status FROM BookStatus WHERE Deleted = FALSE AND Transaction = TRUE; ELSEIF entityType = 'booktransactstatus' THEN SELECT StatusID, Status FROM BookStatus WHERE Deleted = FALSE; ELSEIF entityType = 'memberstatus' THEN SELECT StatusID, Status FROM MemberStatus WHERE Deleted = FALSE; ELSE SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid entity type. Use \"bookstatus\", \"transactionstatus\", or \"memberstatus\".'; END IF; END",
+                "CREATE PROCEDURE GetAllStatus(IN entityType VARCHAR(50)) BEGIN CASE entityType WHEN 'bookstatus' THEN SELECT StatusID, Status FROM BookStatus WHERE Deleted = FALSE; WHEN 'memberstatus' THEN SELECT StatusID, Status FROM MemberStatus WHERE Deleted = FALSE; ELSE SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid entity type. Use \"bookstatus\" or \"memberstatus\".'; END CASE; END",
                 "CREATE PROCEDURE GetAllRoles() BEGIN SELECT RoleID, Role FROM MemberRoles WHERE Deleted = FALSE; END",
-                "CREATE PROCEDURE GetAllTransaction() BEGIN SELECT t.BorrowID, t.BookID, b.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, t.StatusID, s.Status FROM Borrowing t JOIN Books b ON t.BookID = b.BookID JOIN Members m ON t.MemberID = m.MemberID JOIN BookStatus s ON t.StatusID = s.StatusID WHERE s.Transaction = TRUE; END",
+                "CREATE PROCEDURE GetAllTransaction() BEGIN SELECT t.BorrowID, t.BookID, b.Title, m.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, s.Status FROM Borrowing t JOIN Books b ON t.BookID = b.BookID JOIN Members m ON t.MemberID = m.MemberID JOIN BookStatus s ON b.StatusID = s.StatusID; END",
 
                 "CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryID INT, IN genreID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND (Title LIKE ''%', searchTitle, '%'' OR Author LIKE ''%', searchTitle, '%'' )'); END IF; IF categoryID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryID = ', categoryID); END IF; IF genreID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreID = ', genreID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
                 //"CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255),  IN searchAuthor VARCHAR(255),  IN categoryID INT,  IN genreID INT,  IN statusID INT) BEGIN  SET @query = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN  SET @query = CONCAT(@query, ' AND (Title LIKE CONCAT(\"%\", ?, \"%\") OR Author LIKE CONCAT(\"%\", ?, \"%\"))'); END IF;  IF categoryID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND CategoryID = ?'); END IF;  IF genreID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND GenreID = ?'); END IF;  IF statusID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND StatusID = ?'); END IF;  PREPARE stmt FROM @query;  EXECUTE stmt USING searchTitle, searchAuthor, categoryID, genreID, statusID;  DEALLOCATE PREPARE stmt; END",          "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Members WHERE Deleted = FALSE'; IF searchName IS NOT NULL AND LENGTH(searchName) > 0 THEN SET finalQuery = CONCAT(finalQuery, ' AND (Name LIKE ''%', searchName, '%'' OR Email LIKE ''%', searchName, '%'' OR PhoneNumber LIKE ''%', searchName, '%'' )'); END IF; IF roleID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND RoleID = ', roleID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
@@ -124,7 +119,7 @@ public class DatabaseConnection {
 
                 "CREATE PROCEDURE InsertBook(IN bookTitle VARCHAR(255), IN bookAuthor VARCHAR(255), IN categoryId INT, IN genreId INT, IN statusId INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM BookCategories WHERE CategoryID = categoryId) THEN SET p_error_message = 'Invalid category ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookGenres WHERE GenreID = genreId) THEN SET p_error_message = 'Invalid genre ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE StatusID = statusId) THEN SET p_error_message = 'Invalid book status ID.'; ELSEIF EXISTS (SELECT 1 FROM Books WHERE Title = bookTitle AND Author = bookAuthor) THEN SET p_error_message = 'Book already exists.'; ELSE INSERT INTO Books (Title, Author, CategoryID, GenreID, StatusID) VALUES (bookTitle, bookAuthor, categoryId, genreId, statusId); SET p_error_message = NULL; END IF; END",
                 "CREATE PROCEDURE InsertMember(IN memberName VARCHAR(255), IN memberEmail VARCHAR(255), IN memberPhone VARCHAR(15), IN roleId INT, IN statusId INT, OUT p_error_message VARCHAR(255)) BEGIN IF EXISTS (SELECT 1 FROM Members WHERE Name = memberName AND Email = memberEmail) THEN SET p_error_message = 'Member already exists.'; ELSE INSERT INTO Members (Name, Email, PhoneNumber, RoleID, StatusID) VALUES (memberName, memberEmail, memberPhone, roleId, statusId); SET p_error_message = NULL; END IF; END",
-                "CREATE PROCEDURE InsertBorrow(IN bookId BIGINT, IN memberId INT, IN borrowDate DATE, IN dueDate DATE, IN statusId INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = bookId) THEN SET p_error_message = 'Invalid book ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = memberId) THEN SET p_error_message = 'Invalid member ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE StatusID = statusId) THEN SET p_error_message = 'Invalid status ID.'; ELSEIF dueDate <= borrowDate THEN SET p_error_message = 'Due date must be later than borrow date.'; ELSE INSERT INTO Borrowing (BookID, MemberID, BorrowDate, DueDate, StatusID) VALUES (bookId, memberId, borrowDate, dueDate, statusId); SET p_error_message = NULL; END IF; END;",
+                "CREATE PROCEDURE InsertBorrow(IN bookId BIGINT, IN memberId INT, IN borrowDate DATE, IN dueDate DATE, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = bookId) THEN SET p_error_message = 'Invalid book ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = memberId) THEN SET p_error_message = 'Invalid member ID.'; ELSEIF dueDate <= borrowDate THEN SET p_error_message = 'Due date must be later than borrow date.'; ELSE INSERT INTO Borrowing (BookID, MemberID, BorrowDate, DueDate) VALUES (bookId, memberId, borrowDate, dueDate); UPDATE Books SET StatusID = '2' WHERE BookID = bookId; SET p_error_message = NULL; END IF; END;",
                 "CREATE PROCEDURE InsertBookCategory(IN categoryCode VARCHAR(10), IN categoryName VARCHAR(255), OUT errorMessage VARCHAR(255)) BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET DIAGNOSTICS CONDITION 1 errorMessage = MESSAGE_TEXT; END; INSERT INTO BookCategories (CategoryCode, CategoryName) VALUES (categoryCode, categoryName); SET errorMessage = NULL; END",
                 "CREATE PROCEDURE InsertBookGenre(IN genreCode VARCHAR(10), IN genreName VARCHAR(255), OUT errorMessage VARCHAR(255)) BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET DIAGNOSTICS CONDITION 1 errorMessage = MESSAGE_TEXT; END; INSERT INTO BookGenres (GenreCode, GenreName) VALUES (genreCode, genreName); SET errorMessage = NULL; END ;",
                 "CREATE PROCEDURE InsertMemberRole(IN role VARCHAR(50), OUT errorMessage VARCHAR(255)) BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET DIAGNOSTICS CONDITION 1 errorMessage = MESSAGE_TEXT; END; INSERT INTO MemberRoles (Role) VALUES (role); SET errorMessage = NULL; END",                "CREATE PROCEDURE InsertStatus(IN status VARCHAR(50), IN entityType VARCHAR(50), OUT errorMessage VARCHAR(255)) BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET DIAGNOSTICS CONDITION 1 errorMessage = MESSAGE_TEXT; END; IF entityType = 'BOOK' THEN INSERT INTO BookStatus (Status) VALUES (status); SET errorMessage = NULL; ELSEIF entityType = 'MEMBER' THEN INSERT INTO MemberStatus (Status) VALUES (status); SET errorMessage = NULL; ELSE SET errorMessage = 'Invalid entity type. Use ''BOOK'' or ''MEMBER''.'; END IF; END",
@@ -133,7 +128,6 @@ public class DatabaseConnection {
                 "CREATE PROCEDURE UpdateMember(IN p_member_id INT, IN p_name VARCHAR(255), IN p_email VARCHAR(255), IN p_phone VARCHAR(15), IN p_role_id INT, IN p_status_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Members WHERE MemberID = p_member_id LIMIT 1) THEN SET p_error_message = 'Member ID does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM MemberRoles WHERE RoleID = p_role_id LIMIT 1) THEN SET p_error_message = 'Role ID does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM MemberStatus WHERE StatusID = p_status_id LIMIT 1) THEN SET p_error_message = 'Invalid member status.'; ELSE UPDATE Members SET Name = p_name, Email = p_email, PhoneNumber = p_phone, RoleID = p_role_id, StatusID = p_status_id WHERE MemberID = p_member_id; SET p_error_message = NULL; END IF; END;",
                 "CREATE PROCEDURE UpdateBorrowReturnDate(IN p_borrow_id INT, IN p_return_date DATE, IN p_status_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Borrowing WHERE BorrowID = p_borrow_id LIMIT 1) THEN SET p_error_message = 'Borrow ID does not exist.'; ELSE UPDATE Borrowing SET ReturnDate = p_return_date, StatusID = p_status_id WHERE BorrowID = p_borrow_id; SET p_error_message = NULL; END IF; END;",
                 "CREATE PROCEDURE UpdateBookStatus(IN p_book_id BIGINT, IN p_status_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Books WHERE BookID = p_book_id LIMIT 1) THEN SET p_error_message = 'Book ID does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE StatusID = p_status_id LIMIT 1) THEN SET p_error_message = 'Invalid book status.'; ELSE UPDATE Books SET StatusID = p_status_id WHERE BookID = p_book_id; SET p_error_message = NULL; END IF; END;",
-                "CREATE PROCEDURE UpdateTransactionStatus(IN p_borrow_id BIGINT, IN p_status_id INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM Borrowing WHERE BorrowID = p_borrow_id LIMIT 1) THEN SET p_error_message = 'Borrow ID does not exist.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE StatusID = p_status_id LIMIT 1) THEN SET p_error_message = 'Invalid book status.'; ELSE UPDATE Borrowing SET StatusID = p_status_id WHERE BorrowID = p_borrow_id; SET p_error_message = NULL; END IF; END;",
 
                 "CREATE PROCEDURE UpdateBookCategory(IN p_category_id INT, IN p_category_code VARCHAR(10), IN p_category_name VARCHAR(255), OUT resultMessage VARCHAR(255)) BEGIN IF EXISTS (SELECT 1 FROM BookCategories WHERE CategoryID = p_category_id LIMIT 1) THEN UPDATE BookCategories SET CategoryCode = p_category_code, CategoryName = p_category_name WHERE CategoryID = p_category_id; SET resultMessage = 'Update completed'; ELSE SET resultMessage = 'Category ID does not exist'; END IF; END;",
                 "CREATE PROCEDURE UpdateBookGenre(IN p_genre_id INT, IN p_genre_code VARCHAR(10), IN p_genre_name VARCHAR(255), OUT errorMessage VARCHAR(255)) BEGIN DECLARE rowsAffected INT DEFAULT 0; DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET DIAGNOSTICS CONDITION 1 errorMessage = MESSAGE_TEXT; END; IF EXISTS (SELECT 1 FROM BookGenres WHERE GenreID = p_genre_id LIMIT 1) THEN UPDATE BookGenres SET GenreCode = p_genre_code, GenreName = p_genre_name WHERE GenreID = p_genre_id; SET rowsAffected = ROW_COUNT(); IF rowsAffected = 0 THEN SET errorMessage = 'No changes were made.'; ELSE SET errorMessage = NULL; END IF; ELSE SET errorMessage = 'Genre ID does not exist.'; END IF; END;",
@@ -266,44 +260,6 @@ public class DatabaseConnection {
         return bookStatusList;
     }
 
-    public List<BookStatus> getTransactionStatuses() {
-        List<BookStatus> bookStatusList = new ArrayList<>();
-
-        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllStatus(?)}")) {
-            stmt.setString(1, "transactionstatus"); // Corrected parameter value
-            try(ResultSet rs = stmt.executeQuery()) { //Ensuring ResultSet is closed
-                while (rs.next()) {
-                    int statusID = rs.getInt("StatusID");
-                    String status = rs.getString("Status");
-                    bookStatusList.add(new BookStatus(status, statusID));
-                }
-            }
-
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching transaction statuses", e);
-        }
-        return bookStatusList;
-    }
-
-    public List<BookStatus> getBookAndTransactStatuses() {
-        List<BookStatus> bookStatusList = new ArrayList<>();
-
-        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllStatus(?)}")) {
-            stmt.setString(1, "booktransactstatus"); // Corrected parameter value
-            try(ResultSet rs = stmt.executeQuery()) { //Ensuring ResultSet is closed
-                while (rs.next()) {
-                    int statusID = rs.getInt("StatusID");
-                    String status = rs.getString("Status");
-                    bookStatusList.add(new BookStatus(status, statusID));
-                }
-            }
-
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching transaction statuses", e);
-        }
-        return bookStatusList;
-    }
-
     public List<MemberRole> getAllRoles() {
         List<MemberRole> roleList = new ArrayList<>();
 
@@ -358,7 +314,7 @@ public class DatabaseConnection {
                         rs.getDate("DueDate").toLocalDate(),
                         rs.getDate("ReturnDate") != null ? rs.getDate("ReturnDate").toLocalDate() : null,
                         rs.getInt("StatusID"),  // Retrieve StatusID
-                        rs.getString("Status")  // Retrieve readable status name
+                        rs.getString("BookStatus")  // Retrieve readable status name
                 ));
             }
         } catch (SQLException e) {
@@ -560,14 +516,14 @@ public class DatabaseConnection {
         return filteredMembers;
     }
 
-    public List<TransactionViewModel> searchFilterSortTransactions(String searchTitle, String searchName, int filterStatusId) throws SQLException {
+    public List<TransactionViewModel> searchFilterSortTransactions(String searchTitle, String searchName, String filterStatus) throws SQLException {
         List<TransactionViewModel> filteredTransactions = new ArrayList<>();
 
         String sql = "{CALL SearchFilterSortTransactions(?, ?, ?)}";
         try (CallableStatement stmt = connection.prepareCall(sql)) {
             stmt.setString(1, searchTitle);
             stmt.setString(2, searchName);
-            stmt.setInt(3, filterStatusId);
+            stmt.setString(3, filterStatus);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -727,17 +683,7 @@ public class DatabaseConnection {
         } catch (Exception e) {
             System.err.println("Error updating book status: " + e.getMessage());
         }
-    }
 
-    public void updateBorrowStatus(int borrowId, int statusId)  {
-        try {
-            String procedureName = "UpdateBorrowStatus";
-            Object[] parameters = {borrowId, statusId};
-
-            executeProcedure(procedureName, parameters);
-        } catch (Exception e) {
-            System.err.println("Error updating borrow status: " + e.getMessage());
-        }
     }
 
     public void updateBookCategory(BookCategory category) {
@@ -748,8 +694,7 @@ public class DatabaseConnection {
         executeGenreProcedure(true, genre.getGenreId(), genre.getGenreCode(), genre.getGenreName());
     }
 
-    public void updateBookStatus(BookStatus status) {
-        String entityType = "BOOK";
+    public void updateBookStatus(BookStatus status, String entityType) {
         executeStatusProcedure(true, status.getStatusId(), status.getStatus(), entityType);
     }
 
@@ -757,8 +702,7 @@ public class DatabaseConnection {
         executeRoleProcedure(true, role.getRoleId(), role.getRole());
     }
 
-    public void updateMemberStatus(MemberStatus status) {
-        String entityType = "MEMBER";
+    public void updateMemberStatus(MemberStatus status, String entityType) {
         executeMemberStatusProcedure(true, status.getStatusId(), status.getStatus(), entityType);
     }
 
