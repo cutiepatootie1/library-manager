@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane prefHeight="653.0" prefWidth="1269.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mimirlib.mimir.Controller.AdminController">
+   <center>
+      <SplitPane dividerPositions="0.5001577287066247" prefHeight="610.0" prefWidth="1270.0" BorderPane.alignment="CENTER">
+        <items>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="612.0" prefWidth="631.0">
+               <children>
+                  <Accordion layoutX="14.0" layoutY="14.0" prefHeight="585.0" prefWidth="604.0">
+                    <panes>
+                        <TitledPane prefHeight="560.0" prefWidth="632.0" text="Book">
+                           <content>
+                              <SplitPane dividerPositions="0.5" prefHeight="160.0" prefWidth="200.0">
+                                <items>
+                                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                                       <children>
+                                          <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="542.0" prefWidth="313.0">
+                                            <items>
+                                                <TableView fx:id="BookStatusTable" prefHeight="200.0" prefWidth="200.0">
+                                                  <columns>
+                                                    <TableColumn fx:id="bookStatusCol" prefWidth="75.0" text="Status" />
+                                                      <TableColumn fx:id="bookStatusIdCol" prefWidth="75.0" text="ID" />
+                                                  </columns>
+                                                </TableView>
+                                                <TableView fx:id="BookCategoriesTable" prefHeight="275.0" prefWidth="319.0">
+                                                  <columns>
+                                                    <TableColumn fx:id="bookCategoryIdCol" prefWidth="75.0" text="Code" />
+                                                    <TableColumn fx:id="bookCategoryCol" prefWidth="176.00006103515625" text="Category" />
+                                                  </columns>
+                                                </TableView>
+                                            </items>
+                                          </SplitPane>
+                                       </children>
+                                    </AnchorPane>
+                                    <TableView fx:id="BookGenresTable" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                        <TableColumn fx:id="bookGenreIdCol" prefWidth="75.0" text="Code" />
+                                        <TableColumn fx:id="bookGenreCol" prefWidth="208.0000457763672" text="Genre" />
+                                      </columns>
+                                    </TableView>
+                                </items>
+                              </SplitPane>
+                           </content>
+                        </TitledPane>
+                        <TitledPane prefHeight="420.0" prefWidth="604.0" text="Member">
+                           <content>
+                              <SplitPane dividerPositions="0.5" prefHeight="160.0" prefWidth="200.0">
+                                <items>
+                                    <TableView fx:id="MemberRolesTable" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                          <TableColumn fx:id="memberRoleIdCol" prefWidth="75.0" text="ID" />
+                                        <TableColumn fx:id="memberRoleCol" prefWidth="75.0" text="Role" />
+                                      </columns>
+                                    </TableView>
+                                    <TableView fx:id="MemberStatusTable" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                          <TableColumn fx:id="memberStatusIdCol" prefWidth="75.0" text="ID" />
+                                        <TableColumn fx:id="memberStatusCol" prefWidth="75.0" text="Status" />
+                                      </columns>
+                                    </TableView>
+                                </items>
+                              </SplitPane>
+                           </content>
+                        </TitledPane>
+                    </panes>
+                  </Accordion>
+               </children>
+            </AnchorPane>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="612.0" prefWidth="151.0">
+               <children>
+                  <TabPane layoutX="14.0" layoutY="14.0" prefHeight="585.0" prefWidth="604.0" tabClosingPolicy="UNAVAILABLE">
+                    <tabs>
+                      <Tab text="Add Category">
+                           <content>
+                              <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                                 <children>
+                                    <TextField fx:id="newCategoryCodeField" layoutX="227.0" layoutY="110.0" prefHeight="26.0" prefWidth="258.0" />
+                                    <Text layoutX="122.0" layoutY="128.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category Code" textAlignment="RIGHT" />
+                                    <Button layoutX="227.0" layoutY="209.0" mnemonicParsing="false" onAction="#handleAddCategory" prefHeight="36.0" prefWidth="88.0" text="CONFIRM" />
+                                    <TextField fx:id="newCategoryNameField" layoutX="227.0" layoutY="155.0" prefHeight="26.0" prefWidth="258.0" />
+                                    <Text layoutX="119.0" layoutY="173.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category Name" textAlignment="RIGHT" />
+                                 </children>
+                              </AnchorPane>
+                           </content>
+                        </Tab>
+                      <Tab text="Add Genre">
+                           <content>
+                              <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                                 <children>
+                                    <TextField fx:id="newGenreNameField" layoutX="227.0" layoutY="155.0" prefHeight="26.0" prefWidth="258.0" />
+                                    <Text layoutX="139.0" layoutY="128.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Genre Code" textAlignment="RIGHT" />
+                                    <Button layoutX="227.0" layoutY="209.0" mnemonicParsing="false" onAction="#handleAddGenre" prefHeight="36.0" prefWidth="88.0" text="CONFIRM" />
+                                    <TextField fx:id="newGenreCodeField" layoutX="227.0" layoutY="110.0" prefHeight="26.0" prefWidth="258.0" />
+                                    <Text layoutX="119.0" layoutY="173.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category Name" textAlignment="RIGHT" />
+                                 </children>
+                              </AnchorPane>
+                           </content>
+                        </Tab>
+                        <Tab text="Add Status(Book)">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                 <children>
+                                    <Group layoutX="119.0" layoutY="110.0">
+                                       <children>
+                                          <Text layoutX="9.0" layoutY="19.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status(book)" textAlignment="RIGHT" />
+                                          <Button layoutX="108.0" layoutY="50.0" mnemonicParsing="false" onAction="#handleAddBookStatus" prefHeight="36.0" prefWidth="88.0" text="CONFIRM" />
+                                          <TextField fx:id="newBookStatusField" layoutX="108.0" prefHeight="26.0" prefWidth="258.0" />
+                                       </children>
+                                    </Group>
+                                 </children>
+                              </AnchorPane>
+                          </content>
+                        </Tab>
+                        <Tab text="Add Role">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                 <children>
+                                    <Group layoutX="119.0" layoutY="110.0">
+                                       <children>
+                                          <Text layoutX="50.0" layoutY="19.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Role" textAlignment="RIGHT" />
+                                          <Button layoutX="108.0" layoutY="50.0" mnemonicParsing="false" onAction="#handleAddMemberRole" prefHeight="36.0" prefWidth="88.0" text="CONFIRM" />
+                                          <TextField fx:id="newMemberRoleField" layoutX="108.0" prefHeight="26.0" prefWidth="258.0" />
+                                       </children>
+                                    </Group>
+                                 </children></AnchorPane>
+                          </content>
+                        </Tab>
+                        <Tab text="Add Status(Member)">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                 <children>
+                                    <Group layoutX="119.0" layoutY="110.0">
+                                       <children>
+                                          <Text layoutX="3.0" layoutY="19.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status(Member)" textAlignment="RIGHT" />
+                                          <Button layoutX="108.0" layoutY="50.0" mnemonicParsing="false" onAction="#handleAddMemberStatus" prefHeight="36.0" prefWidth="88.0" text="CONFIRM" />
+                                          <TextField fx:id="newMemberStatusField" layoutX="108.0" prefHeight="26.0" prefWidth="258.0" />
+                                       </children>
+                                    </Group>
+                                 </children></AnchorPane>
+                          </content>
+                        </Tab>
+                    </tabs>
+                  </TabPane>
+               </children>
+            </AnchorPane>
+        </items>
+      </SplitPane>
+   </center>
+   <bottom>
+      <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+        <items>
+          <Button fx:id="refreshBtn" mnemonicParsing="false" onAction="#handleRefresh" text="Refresh" />
+            <Button fx:id="toggleEditBtn" mnemonicParsing="false" prefHeight="26.0" prefWidth="97.0" text="Disable Editing" />
+        </items>
+      </ToolBar>
+   </bottom>
+</BorderPane>

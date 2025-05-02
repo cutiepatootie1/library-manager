@@ -1,37 +1,50 @@
 package com.mimirlib.mimir.Controller;
 
+
 import com.mimirlib.mimir.Data.DatabaseConnection;
 import com.mimirlib.mimir.Data.Member;
+import com.mimirlib.mimir.Data.MemberRole;
+import com.mimirlib.mimir.Data.MemberStatus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.ChoiceBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 
 public class MemberController {
-    private static final Logger logger = Logger.getLogger(MemberController.class.getName());
 
+
+    private static final Logger logger = Logger.getLogger(MemberController.class.getName());
     DatabaseConnection dbasecon = new DatabaseConnection();
+
 
     private final String member = "memberstatus"; // Table name
 
-    public MemberController()  {}
+
+    private Member selectedMember;
+    private int selectedMemberId;
+
+
+    public MemberController() {
+    }
+
 
     // INITIALIZE FXML IDs
     @FXML
@@ -62,65 +75,46 @@ public class MemberController {
     private ChoiceBox<String> roleBox;
     @FXML
     private ChoiceBox<String> statusBox;
-
+    // Button IDs
     @FXML
+    private Button refreshButton;
+    @FXML
+    private Button deleteBtn;
+    @FXML
+    private Button addBtn;
+    @FXML
+    private Button resetBtn;
+    @FXML
+    private Button selectBtn;
+    @FXML
+    private Button cancelBtn;
+    @FXML
+    private Text borrowLabel;
+
+    private boolean isBorrow;
+
+    // INITIALIZE Methods
     public void initialize() throws SQLException {
         System.out.println("Initializing...");
-        idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-        nameColumn.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
-        roleColumn.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
-
-        extIdCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-        extNameCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
-        extEmailCol.setCellValueFactory(cellData -> cellData.getValue().emailProperty());
-        extContCol.setCellValueFactory(cellData -> cellData.getValue().contactNumProperty());
-        extRoleCol.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
-        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
-
-        List<Member> members = dbasecon.getAllMembers();
-        mainTable.setItems(FXCollections.observableArrayList(members));
-
-        mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-            if (newSel != null) {
-                extMemberTable.setItems(FXCollections.observableArrayList(newSel));
-            }
-        });
+        initializeTableColumns();
+        loadMembersData();
+        setupTableSelectionListener();
+        membersPanel(false); // Default to non-borrow mode
         editInitialize();
         initializeRoles();
         initializeStatus();
+        refreshTables();
+        // Initially disable buttons except add and cancel
+        deleteBtn.setDisable(true);
+        resetBtn.setDisable(true);
+        selectBtn.setDisable(true);
     }
 
-    // Revise this method after completing the add member fxml and controller
-    @FXML
-    public void add(MouseEvent event) throws SQLException {
-        System.out.println("clicked add");
-        initialize();
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/addMember.fxml"));
-            Parent root = loader.load();
-
-            AddMemController modalController = loader.getController();
-            modalController.initializeRoles();
-
-            Stage stage = new Stage();
-            stage.setTitle("New Member");
-            stage.setScene(new Scene(root));
-            stage.initModality(Modality.WINDOW_MODAL); // Block input to parent window
-            stage.initOwner(((Node) event.getSource()).getScene().getWindow()); // set parent
-            stage.showAndWait();
-
-            refreshTables();
-
-        }catch (Exception e){
-            logger.log(Level.SEVERE,"Error opening add window", e);
-        }
-    }
-
-    public void refreshTables() throws SQLException {
-        System.out.println("refreshing...");
+    private void initializeTableColumns() {
         idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
         nameColumn.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
         roleColumn.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
+
 
         extIdCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
         extNameCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
@@ -128,28 +122,42 @@ public class MemberController {
         extContCol.setCellValueFactory(cellData -> cellData.getValue().contactNumProperty());
         extRoleCol.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
         extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+    }
 
-        List<Member> members = dbasecon.getAllMembers();
-        mainTable.setItems(FXCollections.observableArrayList(members));
-
+    private void setupTableSelectionListener() {
         mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
                 extMemberTable.setItems(FXCollections.observableArrayList(newSel));
+                deleteBtn.setDisable(false);
+                resetBtn.setDisable(false);
+                selectBtn.setDisable(!isBorrow);
+            } else {
+                extMemberTable.getItems().clear();
+                deleteBtn.setDisable(true);
+                resetBtn.setDisable(true);
+                selectBtn.setDisable(true);
             }
+
+            // Dynamically update refresh button state
+            updateRefreshButtonState();
         });
-        editInitialize();
     }
 
-
     @FXML
-    private void editInitialize() throws SQLException{
+    private void editInitialize() throws SQLException {
         extMemberTable.setEditable(true);
-        List<String> roleList = dbasecon.getAllRoles();
-        List<String> statusList = dbasecon.getAllStatus(member);
+        List<MemberRole> roleList = dbasecon.getAllRoles();
+        List<MemberStatus> statusList = dbasecon.getMemberStatuses();
 
-        ObservableList<String> roles = FXCollections.observableArrayList(roleList);
-        ObservableList<String> status = FXCollections.observableArrayList(statusList);
+        List<String> formattedRoles = roleList.stream()
+                .map(rol -> rol.getRole())
+                .collect(Collectors.toList());
+        List<String> formattedStatusses = statusList.stream()
+                .map(sta -> sta.getStatus())
+                .collect(Collectors.toList());
 
+        ObservableList<String> roles = FXCollections.observableArrayList(formattedRoles);
+        ObservableList<String> status = FXCollections.observableArrayList(formattedStatusses);
 
         extNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extEmailCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -157,96 +165,268 @@ public class MemberController {
         extRoleCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(roles));
         extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(status));
 
-        extNameCol.setOnEditCommit(event -> {
-            Member member = event.getRowValue();
-            member.idProperty().getValue();
-            member.nameProperty().set(event.getNewValue());
-            dbasecon.updateMember(member);
-        });
+        setupEditCommitHandlers();
+    }
 
-        extEmailCol.setOnEditCommit(event -> {
-            Member member = event.getRowValue();
-            member.idProperty().getValue();
-            member.emailProperty().set(event.getNewValue());
-            dbasecon.updateMember(member);
-        });
+    public void initializeRoles() {
+        List<MemberRole> roleList = dbasecon.getAllRoles();
+        List<String> formattedRoles = roleList.stream()
+                .map(MemberRole::getRole) // Extract readable role names
+                .collect(Collectors.toList());
 
-        extContCol.setOnEditCommit(event -> {
-            Member member = event.getRowValue();
-            member.idProperty().getValue();
-            member.contactNumProperty().set(event.getNewValue());
-            dbasecon.updateMember(member);
-        });
+        initializeChoiceBox(roleBox, formattedRoles, "Role List is null: ");
+    }
 
-        extRoleCol.setOnEditCommit(event -> {
-            Member member = event.getRowValue();
-            member.idProperty().getValue();
-            member.roleProperty().set(event.getNewValue());
-            dbasecon.updateMember(member);
-        });
+    public void initializeStatus() {
+        List<MemberStatus> statusList = dbasecon.getMemberStatuses();
+        List<String> formattedStatuses = statusList.stream()
+                .map(MemberStatus::getStatus) // Extract readable status names
+                .collect(Collectors.toList());
 
-        extStatus.setOnEditCommit(event -> {
-            Member member = event.getRowValue();
-            member.idProperty().getValue();
-            member.statusProperty().set(event.getNewValue());
-            dbasecon.updateMember(member);
-        });
+        initializeChoiceBox(statusBox, formattedStatuses, "Status List is null: ");
+    }
+
+
+    // DATA LOADING and REFRESHING
+    private void loadMembersData() {
+        List<Member> members = dbasecon.getAllMembers();
+        mainTable.setItems(FXCollections.observableArrayList(members));
+    }
+
+    private void setupEditCommitHandlers() {
+        extNameCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.nameProperty().set(newValue)));
+        extEmailCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.emailProperty().set(newValue)));
+
+
+        extContCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.contactNumProperty().set(newValue)));
+        extRoleCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.roleProperty().set(newValue)));
+
+
+        extStatus.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.statusProperty().set(newValue)));
     }
 
     @FXML
-    public void deleteMember()throws SQLException{
-        Member selectedItem = mainTable.getSelectionModel().getSelectedItem();
-        if (selectedItem != null){
-            long selectedId = selectedItem.getId();
-            System.out.println("selected id:" + selectedId);
-            DatabaseConnection.deleteMemberById(selectedId);
+    public void refreshTables() throws SQLException {
+        System.out.println("Refreshing member data...");
+
+        // Store the currently selected member
+        Member selectedMember = mainTable.getSelectionModel().getSelectedItem();
+
+        // Reload member list from the database
+        List<Member> members = dbasecon.getAllMembers();
+        ObservableList<Member> memberList = FXCollections.observableArrayList(members);
+        mainTable.setItems(memberList);
+
+        // Restore selection if it still exists
+        if (selectedMember != null && memberList.contains(selectedMember)) {
+            mainTable.getSelectionModel().select(selectedMember);
+            extMemberTable.setItems(FXCollections.observableArrayList(selectedMember));
+        } else {
+            extMemberTable.getItems().clear(); // Clear extended table if no selection
+        }
+
+        // Update button states dynamically
+        updateRefreshButtonState();
+    }
+
+    private void updateRefreshButtonState() {
+        boolean hasSelection = mainTable.getSelectionModel().getSelectedItem() != null;
+        refreshButton.setDisable(!hasSelection); // Disable if no selection exists
+    }
+
+
+    // CORE FUNCTIONALITIES
+    @FXML
+    public void add(MouseEvent event) {
+        System.out.println("clicked add");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/addMember.fxml"));
+            Parent root = loader.load();
+
+
+            AddMemController modalController = loader.getController();
+            modalController.initializeRoles();
+
+
+            Stage stage = new Stage();
+            stage.setTitle("New Member");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.WINDOW_MODAL);
+            // Block input to parent window
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
+            // set parent
+            stage.showAndWait();
+
+
             refreshTables();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error opening add window", e);
         }
     }
 
-        @FXML
-        public void filterMembers(){
-            String searchName = searchFld.getText();
-            String searchEmail = searchFld.getText();
-            String searchPhoneNum = searchFld.getText();
-            String roleFilter = roleBox.getValue() != null ? roleBox.getValue() : "";
-            String statusFilter = statusBox.getValue() != null ? statusBox.getValue(): "";
+    @FXML
+    public void deleteMember() {
+        try {
+            Member selectedItem = mainTable.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                int selectedId = selectedItem.getId();
+                System.out.println("Selected ID: " + selectedId);
 
-            List<Member> filteredMembers = dbasecon.viewMembersWithFilters(searchName, searchEmail, searchPhoneNum, roleFilter, statusFilter);
-            mainTable.setItems(FXCollections.observableArrayList(filteredMembers));
+                // Execute deletion procedure
+                dbasecon.deleteMember(selectedId);
 
-            System.out.println(filteredMembers);
-
-            System.out.println("CLicked button");
-
+                // Refresh table after deletion
+                refreshTables();
+            } else {
+                System.out.println("No member selected for deletion.");
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error deleting member", e);
         }
-
-    public void initializeRoles() throws SQLException {
-        List<String> roleList = dbasecon.getAllRoles();
-
-
-        ObservableList<String> roles = FXCollections.observableArrayList(roleList);
-        System.out.println("Category List is null: " + (roleBox == null));  // Debugging line
-
-        if (roleBox != null) {
-            roleBox.setItems(roles);
-        }else{
-            System.out.println("category box items is still null. Check your FXML");
-        }
-
     }
 
-    public void initializeStatus() throws SQLException{
-        List<String> statList = dbasecon.getAllStatus(member);
+    @FXML
+    public void filterMembers() {
+        String searchName = searchFld.getText();
+        String searchEmail = searchFld.getText();
+        String searchPhoneNum = searchFld.getText();
+        String roleFilter = roleBox.getValue() != null ? roleBox.getValue() : "";
+        String statusFilter = statusBox.getValue() != null ? statusBox.getValue() : "";
 
-        ObservableList<String> genres = FXCollections.observableArrayList(statList);
-        System.out.println("Status List is null: " + (statusBox == null));  // Debugging line
 
-        if (statusBox != null) {
-            statusBox.setItems(genres);
-        }else{
-            System.out.println("status box items is still null. Check your FXML");
-        }
+        List<Member> filteredMembers = dbasecon.viewMembersWithFilters(searchName, searchEmail, searchPhoneNum, roleFilter, statusFilter);
+        mainTable.setItems(FXCollections.observableArrayList(filteredMembers));
 
+
+        System.out.println(filteredMembers);
+        System.out.println("CLicked button");
     }
+
+
+    // SELECTION HANDLING
+    public Member getSelectedMember() {
+        return selectedMember;
+    }
+
+    public int getSelectedMemberId() {
+        return selectedMemberId;
+    }
+
+    @FXML
+    public void handleSelectMemberButtonAction() {
+        Member selectedMember = mainTable.getSelectionModel().getSelectedItem();
+        if (selectedMember != null) {
+            this.selectedMemberId = selectedMember.getId();
+            Stage stage = (Stage) selectBtn.getScene().getWindow();
+            stage.close();
+        } else {
+            System.out.println("Please select a member.");
+        }
+    }
+
+    public void showMemberSelection(ActionEvent event) {
+        try {
+            // 1. Load the FXML (as before)
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/member.fxml"));
+            Parent root = loader.load();
+            MemberController selectionController = loader.getController();
+
+
+            // 2. Configure the controller for borrow mode (if needed)
+            selectionController.membersPanel(this.isBorrow);  //  THIS IS IMPORTANT!
+
+
+            // 3. Set up the stage (as before)
+            Stage stage = new Stage();
+            stage.setTitle("Select Member");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
+
+
+            // 4. Show and wait
+            stage.showAndWait();
+
+
+            // 5. (Important) Get the selected member AFTER the stage is closed
+            this.selectedMemberId = selectionController.getSelectedMemberId();
+            this.selectedMember = selectionController.getSelectedMember();
+
+
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
+    }
+
+    public void selectMember(int memberId) {
+        for (Member member : mainTable.getItems()) {
+            if (member.getId() == memberId) {
+                mainTable.getSelectionModel().select(member);
+                mainTable.scrollTo(member); // Optional: Scrolls the selected member into view
+                // Optional: If you have a detail pane, populate it here
+                break;
+            }
+        }
+    }
+
+
+    // BORROWING and TRANSACTIONS
+    public void membersPanel(boolean isBorrow) {
+        this.isBorrow = isBorrow;
+        addBtn.setVisible(!isBorrow);
+        addBtn.setManaged(!isBorrow);
+        // Important for layout
+        deleteBtn.setVisible(!isBorrow);
+        deleteBtn.setManaged(!isBorrow);
+        resetBtn.setVisible(!isBorrow);
+        resetBtn.setManaged(!isBorrow);
+
+
+        selectBtn.setVisible(isBorrow);
+        selectBtn.setManaged(isBorrow);
+        cancelBtn.setVisible(isBorrow);
+        cancelBtn.setManaged(isBorrow);
+        borrowLabel.setVisible(isBorrow);
+        borrowLabel.setManaged(isBorrow);
+
+
+        // Always enable addBtn and cancelBtn
+        addBtn.setDisable(false);
+        cancelBtn.setDisable(false);
+    }
+
+    @FXML
+    public void cancelBorrowing(ActionEvent event) {
+        //  Logic to handle canceling the borrowing process
+        System.out.println("Borrowing process canceled.");
+        //  Get the current stage
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        //  Close the stage
+        stage.close();
+    }
+
+
+    // UTILITY
+    private void initializeChoiceBox(ChoiceBox<String> choiceBox, List<String> dataList, String debugMessage) {
+        ObservableList<String> items = FXCollections.observableArrayList(dataList);
+        System.out.println(debugMessage + (choiceBox == null));
+
+
+        if (choiceBox != null) {
+            choiceBox.setItems(items);
+        } else {
+            System.out.println(debugMessage + "Check your FXML");
+        }
+    }
+
+    private interface MemberPropertyUpdater {
+        void update(Member member, String newValue);
+    }
+
+    private void updateMemberProperty(TableColumn.CellEditEvent<Member, String> event, MemberPropertyUpdater updater) {
+        Member member = event.getRowValue();
+        updater.update(member, event.getNewValue());
+        dbasecon.updateMember(member);
+    }
+
 }

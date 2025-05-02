@@ -20,27 +20,27 @@
                <children>
                   <TableView fx:id="mainTable" layoutX="2.0" layoutY="6.0" prefHeight="602.0" prefWidth="422.0">
                     <columns>
-                      <TableColumn fx:id="idColumn" prefWidth="66.0" text="book id" />
-                      <TableColumn fx:id="titleColumn" prefWidth="194.0" text="Title" />
+                      <TableColumn fx:id="idColumn" prefWidth="38.399996280670166" text="ID" />
+                      <TableColumn fx:id="titleColumn" prefWidth="224.80005264282227" text="Title" />
                         <TableColumn fx:id="authColumn" minWidth="0.0" prefWidth="160.0" text="Author" />
                     </columns>
                   </TableView>
-                  <Button layoutX="24.0" layoutY="617.0" mnemonicParsing="false" onAction="#initialize" text="Refresh" />
+                  <Button fx:id="refreshButton" layoutX="24.0" layoutY="617.0" mnemonicParsing="false" onAction="#refreshTables" text="Refresh" />
                </children>
             </AnchorPane>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="782.0">
                <children>
-                  <Button fx:id="addBtn" layoutX="464.0" layoutY="159.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="100.0" text="ADD">
+                  <Button fx:id="returnBtn" layoutX="332.0" layoutY="158.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="110.0" text="RETURN">
                      <font>
                         <Font size="18.0" />
                      </font>
                   </Button>
-                  <Button layoutX="341.0" layoutY="159.0" mnemonicParsing="false" onAction="#deleteBook" prefHeight="32.0" prefWidth="100.0" text="DELETE">
+                  <Button fx:id="deleteBtn" layoutX="455.0" layoutY="158.0" mnemonicParsing="false" onAction="#deleteBook" prefHeight="32.0" prefWidth="110.0" text="DELETE">
                      <font>
                         <Font size="18.0" />
                      </font>
                   </Button>
-                  <Button layoutX="586.0" layoutY="159.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="100.0" text="BORROW">
+                  <Button fx:id="borrowBtn" layoutX="577.0" layoutY="158.0" mnemonicParsing="false" onAction="#handleBorrowBookAction" prefHeight="32.0" prefWidth="110.0" text="BORROW">
                      <font>
                         <Font size="18.0" />
                      </font>
@@ -52,9 +52,9 @@
                   </Button>
                   <TableView fx:id="extBookTable" layoutX="15.0" layoutY="53.0" prefHeight="75.0" prefWidth="802.0" style="-fx-font-size: 16;">
                     <columns>
-                      <TableColumn fx:id="extIdCol" editable="false" prefWidth="75.0" text="book id" />
-                      <TableColumn fx:id="extTitleCol" prefWidth="239.0" text="Title" />
-                        <TableColumn fx:id="extAuthCol" prefWidth="117.0" text="Author" />
+                      <TableColumn fx:id="extIdCol" editable="false" prefWidth="43.200013160705566" text="ID" />
+                      <TableColumn fx:id="extTitleCol" prefWidth="230.39997482299805" text="Title" />
+                        <TableColumn fx:id="extAuthCol" prefWidth="157.60003662109375" text="Author" />
                         <TableColumn fx:id="extCatCol" prefWidth="128.0" text="Category" />
                         <TableColumn fx:id="extGenCol" prefWidth="117.0" text="Genre" />
                         <TableColumn fx:id="extStatus" prefWidth="124.0" text="Status" />
@@ -79,7 +79,12 @@
                   <ChoiceBox fx:id="categoryBox" layoutX="89.0" layoutY="444.0" prefWidth="150.0" />
                   <ChoiceBox fx:id="genreBox" layoutX="251.0" layoutY="444.0" prefWidth="150.0" />
                   <ChoiceBox fx:id="statusBox" layoutX="424.0" layoutY="444.0" prefWidth="150.0" />
-                  <Button layoutX="707.0" layoutY="159.0" mnemonicParsing="false" onAction="#editInitialize" prefHeight="32.0" prefWidth="100.0" text="RESET">
+                  <Button fx:id="resetBtn" layoutX="698.0" layoutY="158.0" mnemonicParsing="false" onAction="#editInitialize" prefHeight="32.0" prefWidth="110.0" text="RESET">
+                     <font>
+                        <Font size="18.0" />
+                     </font>
+                  </Button>
+                  <Button fx:id="addBtn1" layoutX="209.0" layoutY="158.0" mnemonicParsing="false" onMouseClicked="#add" prefHeight="32.0" prefWidth="110.0" text="ADD">
                      <font>
                         <Font size="18.0" />
                      </font>

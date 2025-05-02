@@ -1,5 +1,8 @@
 package com.mimirlib.mimir.Controller;
 
+import com.mimirlib.mimir.Data.BookCategory;
+import com.mimirlib.mimir.Data.BookGenre;
+import com.mimirlib.mimir.Data.BookStatus;
 import com.mimirlib.mimir.Data.DatabaseConnection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,12 +14,13 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class AddBookController {
-    static {
-        Logger.getLogger(AddBookController.class.getName());
-    }
+
+    private static final Logger logger = Logger.getLogger(AddBookController.class.getName());
 
     DatabaseConnection dbasecon = new DatabaseConnection();
     @FXML
@@ -30,25 +34,33 @@ public class AddBookController {
 
     @FXML
     public void initializeCats() {
-        List<String> catList = dbasecon.getAllCategories();
+        List<BookCategory> catList = dbasecon.getAllCategories();
 
+        // Convert to a list containing only the formatted code-name pair
+        List<String> formattedCategories = catList.stream()
+                .map(cat -> cat.getCategoryCode() + " - " + cat.getCategoryName())
+                .collect(Collectors.toList());
 
-        ObservableList<String> categories = FXCollections.observableArrayList(catList);
-        System.out.println("Category List is null: " + (categoryBox == null));  // Debugging line
+        ObservableList<String> categories = FXCollections.observableArrayList(formattedCategories);
+        System.out.println("Category List is null: " + (categoryBox == null)); // Debugging line
 
         if (categoryBox != null) {
             categoryBox.setItems(categories);
-        }else{
+        } else {
             System.out.println("category box items is still null. Check your FXML");
         }
-
     }
 
     @FXML
     public void initializeGenre() {
-        List<String> genList = dbasecon.getAllGenre();
+        List<BookGenre> genList = dbasecon.getAllGenres();
 
-        ObservableList<String> genres = FXCollections.observableArrayList(genList);
+        // Convert to a list containing only the formatted code-name pair
+        List<String> formattedGenres = genList.stream()
+                .map(cat -> cat.getGenreCode() + " - " + cat.getGenreName())
+                .collect(Collectors.toList());
+
+        ObservableList<String> genres = FXCollections.observableArrayList(formattedGenres);
         System.out.println("Genre List is null: " + (genreBox == null));  // Debugging line
 
         if (genreBox != null) {
@@ -61,18 +73,44 @@ public class AddBookController {
 
     @FXML
     private void addProcess(ActionEvent event) {
-
         String title = titlefld.getText();
         String author = authorfld.getText();
-        String category = categoryBox.getValue().split(" ")[0];
-        String genre = genreBox.getValue().split(" ")[0];
-        String status = "Available";
+        String selectedCategory = categoryBox.getValue();
+        String selectedGenre = genreBox.getValue();
+        String selectedStatus = "Available";  // Default status
 
-        dbasecon.bookInput(false, title, author, category, genre,status);
+        try {
+            // Retrieve the corresponding CategoryID
+            int categoryId = dbasecon.getAllCategories().stream()
+                    .filter(cat -> (cat.getCategoryCode() + " - " + cat.getCategoryName()).equals(selectedCategory))
+                    .map(BookCategory::getCategoryId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid category selected"));
 
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.close();
+            // Retrieve the corresponding GenreID
+            int genreId = dbasecon.getAllGenres().stream()
+                    .filter(genre -> (genre.getGenreCode() + " - " + genre.getGenreName()).equals(selectedGenre))
+                    .map(BookGenre::getGenreId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid genre selected"));
 
+            // Retrieve the corresponding StatusID
+            int statusId = dbasecon.getBookStatuses().stream()
+                    .filter(status -> status.getStatus().equals(selectedStatus))
+                    .map(BookStatus::getStatusId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
+
+            // Execute book input procedure with IDs instead of names
+            dbasecon.bookInput(title, author, categoryId, genreId, statusId);
+
+            // Close the stage
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.close();
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error adding book: " + e.getMessage(), e);
+        }
     }
 
     @FXML

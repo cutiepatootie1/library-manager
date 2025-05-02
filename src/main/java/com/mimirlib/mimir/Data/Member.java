@@ -1,50 +1,45 @@
 package com.mimirlib.mimir.Data;
 
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.*;
 
-public class Member extends DatabaseConnection {
-    private final SimpleIntegerProperty id;
-    private final SimpleStringProperty name;
-    private final SimpleStringProperty email;
-    private final SimpleStringProperty contactNum;
-    private final SimpleStringProperty role;
-    private final SimpleStringProperty status;
+public class Member {
+    private final IntegerProperty id;
+    private final StringProperty name;
+    private final StringProperty email;
+    private final StringProperty contactNum;
+    private final IntegerProperty roleId;
+    private final StringProperty role;
+    private final IntegerProperty statusId;
+    private final StringProperty status;
 
-    public Member(int memId, String memName, String memEmail, String memContactNum, String memRole, String memStatus) {
-        this.id = new SimpleIntegerProperty(memId);
-        this.name = new SimpleStringProperty(memName);
-        this.email = new SimpleStringProperty(memEmail);
-        this.contactNum = new SimpleStringProperty(memContactNum);
-        this.role = new SimpleStringProperty(memRole);
-        this.status = new SimpleStringProperty(memStatus);
+    public Member(int id, String name, String email, String contactNum, int roleId, String role, int statusId, String status) {
+        this.id = new SimpleIntegerProperty(id);
+        this.name = new SimpleStringProperty(name);
+        this.email = new SimpleStringProperty(email);
+        this.contactNum = new SimpleStringProperty(contactNum);
+        this.roleId = new SimpleIntegerProperty(roleId);
+        this.role = new SimpleStringProperty(role);
+        this.statusId = new SimpleIntegerProperty(statusId);
+        this.status = new SimpleStringProperty(status);
     }
 
-    public int getId() {return id.get();}
+    // Property accessors
+    public IntegerProperty idProperty() { return id; }
+    public StringProperty nameProperty() { return name; }
+    public StringProperty emailProperty() { return email; }
+    public StringProperty contactNumProperty() { return contactNum; }
+    public IntegerProperty roleIdProperty() { return roleId; }
+    public StringProperty roleProperty() { return role; }
+    public IntegerProperty statusIdProperty() { return statusId; }
+    public StringProperty statusProperty() { return status; }
 
-    /**
-    // Getters
-    public String getName() {return name.get();}
-    public String getEmail() {return email.get();}
-    public String getContactNum() {return contactNum.get();}
-    public String getRole() {return role.get();}
-    public String getStatus() {return status.get();}
-
-    // Setters
-    public void setId(int memId) {id.set(memId);}
-    public void setName(String memName) {name.set(memName);}
-    public void setEmail(String memEmail) {email.set(memEmail);}
-    public void setContactNum(String memContactNum) {contactNum.set(memContactNum);}
-    public void setRole(String memRole) {role.set(memRole);}
-    public void setStatus(String memStatus) {status.set(memStatus);}
-**/
-
-    // Property Getters (for use in JavaFX bindings)
-    public SimpleIntegerProperty idProperty() {return id;}
-    public SimpleStringProperty nameProperty() {return name;}
-    public SimpleStringProperty emailProperty() {return email;}
-    public SimpleStringProperty contactNumProperty() {return contactNum;}
-    public SimpleStringProperty roleProperty() {return role;}
-    public SimpleStringProperty statusProperty() {return status;}
+    // Standard Getter Methods
+    public int getId() { return id.get(); }
+    public String getName() { return name.get(); }
+    public String getEmail() { return email.get(); }
+    public String getContactNum() { return contactNum.get(); }
+    public int getRoleId() { return roleId.get(); }
+    public String getRole() { return role.get(); }
+    public int getStatusId() { return statusId.get(); }
+    public String getStatus() { return status.get(); }
 }
-

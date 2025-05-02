@@ -17,9 +17,7 @@ public class HelloApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         Image icon = new Image("file:src/asset/icon.png");
-        //group node shit
-       //Group root = new Group();
-        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("maindih.fxml")));
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/com/mimirlib/mimir/maindih.fxml")));
         //scene customizations
         Scene scene = new Scene(root);
         stage.getIcons().add(icon);
