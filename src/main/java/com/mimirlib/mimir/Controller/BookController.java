@@ -1,8 +1,6 @@
 package com.mimirlib.mimir.Controller;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
@@ -150,6 +148,9 @@ public class BookController {
                 } catch (Exception e) {
                     logger.log(Level.SEVERE, "Error checking borrow status", e);
                 }
+
+                borrowBtn.setDisable(false);
+                deleteBtn.setDisable(false);
 
                 resetBtn.setDisable(false);
             } else {
@@ -479,6 +480,7 @@ public class BookController {
         }
     }
 
+
     public boolean isBookCurrentlyBorrowed(int bookId) {
         return dbasecon.getAllTransactions().stream()
                 .anyMatch(t -> t.getBookId() == bookId && t.getReturnDate() == null);
@@ -527,6 +529,5 @@ public class BookController {
             dbasecon.updateBook(book);
         });
     }
-
 
 }

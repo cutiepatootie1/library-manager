@@ -58,12 +58,11 @@
                   <TableView fx:id="extTransactionTable" layoutX="15.0" layoutY="53.0" prefHeight="75.0" prefWidth="802.0" style="-fx-font-size: 16;">
                     <columns>
                       <TableColumn fx:id="extIdCol" editable="false" prefWidth="42.399964332580566" text="ID" />
-                      <TableColumn fx:id="extTitleCol" prefWidth="192.7998924255371" text="Book Title" />
-                        <TableColumn fx:id="extNameCol" prefWidth="198.40003967285156" text="Borrower" />
-                        <TableColumn fx:id="extBorrowCol" prefWidth="96.79998779296875" text="Borrowed Date" />
-                        <TableColumn fx:id="extDueCol" prefWidth="91.199951171875" text="Due Date" />
-                        <TableColumn fx:id="extReturnCol" prefWidth="92.0" text="Return Date" />
-                        <TableColumn fx:id="extStatusCol" prefWidth="88.800048828125" text="Status" />
+                      <TableColumn fx:id="extTitleCol" prefWidth="208.8000602722168" text="Book Title" />
+                        <TableColumn fx:id="extNameCol" prefWidth="195.199951171875" text="Borrower" />
+                        <TableColumn fx:id="extBorrowCol" prefWidth="124.0" text="Borrowed Date" />
+                        <TableColumn fx:id="extDueCol" prefWidth="115.0" text="Due Date" />
+                        <TableColumn fx:id="extReturnCol" prefWidth="115.0" text="Return Date" />
                     </columns>
                      <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
