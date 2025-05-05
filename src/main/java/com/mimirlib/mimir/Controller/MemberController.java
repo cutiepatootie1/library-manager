@@ -56,7 +56,7 @@ public class MemberController {
     @FXML
     private TableColumn<Member, String> roleColumn;
     @FXML
-    private javafx.scene.control.TableView<Member> extMemberTable;
+    private TableView<Member> extMemberTable;
     @FXML
     private TableColumn<Member, Number> extIdCol;
     @FXML

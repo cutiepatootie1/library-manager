@@ -10,6 +10,8 @@ import javafx.stage.Stage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.mimirlib.mimir.Data.TransactionViewModel;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class StatusFormController {
 
@@ -19,7 +21,7 @@ public class StatusFormController {
     @FXML
     private ChoiceBox<String> statusBox;
     @FXML
-    private Button confirmStatusBtn; // Corrected ID
+    private Button confirmStatusBtn;
 
     private TransactionController transactionController;
     private TransactionViewModel selectedTransaction;
@@ -43,11 +45,10 @@ public class StatusFormController {
     }
 
     public String getUpdatedStatus() {
-        return currentStatus;
+        return statusBox.getValue();
     }
 
     public void initialize() {
-
         loadTransactionStatuses();
     }
 
@@ -68,40 +69,31 @@ public class StatusFormController {
             logger.log(Level.SEVERE, "Error loading transaction statuses", e);
             System.err.println("Error loading transaction statuses: " + e.getMessage());
         }
-        statusBox.getItems().addAll("Borrowed", "Overdue", "Available");
-
     }
 
     @FXML
     private void handleConfirm() {
-        String selectedStatus = statusBox.getValue(); // Get the selected status name
+        String selectedStatusName = statusBox.getValue();
 
-        if (selectedStatus != null && !selectedStatus.isEmpty()) {
+        if (selectedStatusName != null && !selectedStatusName.isEmpty()) {
             try {
-                // Retrieve corresponding StatusID for selected status name
-                int statusId = transactionController.dbasecon.getBookStatuses().stream()
-                        .filter(status -> status.getStatus().equals(selectedStatus))
+                int statusId = transactionController.dbasecon.getTransactionStatuses().stream() // Use the provided method
+                        .filter(status -> status.getStatus().equalsIgnoreCase(selectedStatusName))
                         .map(BookStatus::getStatusId)
                         .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("Invalid book status selected"));
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid transaction status selected"));
 
-                selectedTransaction.setStatusId(statusId);  // Set the StatusID
-                selectedTransaction.setBookStatus(selectedStatus); // Maintain readable name for UI
-
+                selectedTransaction.setStatusId(statusId);
+                selectedTransaction.setBookStatus(selectedStatusName);
 
                 transactionController.dbasecon.updateBorrowStatus(selectedTransaction.getTransactionId(), statusId);
                 System.out.println("Transaction status updated to: " + selectedStatusName);
-                // Update book status in the database using BookID and StatusID
-                transactionController.dbasecon.updateBookStatus(selectedTransaction.getBookId(), statusId);
-                System.out.println("Transaction and book status updated to: " + selectedStatus);
 
-
-                // Close the status update window
                 Stage stage = (Stage) confirmStatusBtn.getScene().getWindow();
                 stage.close();
 
             } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error updating transaction and book status", e);
+                logger.log(Level.SEVERE, "Error updating transaction status", e);
                 System.err.println("Database error: " + e.getMessage());
             }
         } else {
@@ -111,7 +103,7 @@ public class StatusFormController {
 
     @FXML
     private void handleCancel() {
-        Stage stage = (Stage) confirmStatusBtn.getScene().getWindow(); // Corrected ID
+        Stage stage = (Stage) confirmStatusBtn.getScene().getWindow();
         stage.close();
     }
 }

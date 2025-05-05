@@ -33,8 +33,8 @@
                                             <items>
                                                 <TableView fx:id="BookStatusTable" prefHeight="200.0" prefWidth="200.0">
                                                   <columns>
-                                                    <TableColumn fx:id="bookStatusCol" prefWidth="75.0" text="Status" />
-                                                      <TableColumn fx:id="bookStatusIdCol" prefWidth="75.0" text="ID" />
+                                                    <TableColumn fx:id="bookStatusCol" prefWidth="92.79997502565402" text="Status" />
+                                                      <TableColumn fx:id="bookStatusIdCol" prefWidth="68.79998779296875" text="ID" />
                                                   </columns>
                                                 </TableView>
                                                 <TableView fx:id="BookCategoriesTable" prefHeight="275.0" prefWidth="319.0">
@@ -64,13 +64,13 @@
                                     <TableView fx:id="MemberRolesTable" prefHeight="200.0" prefWidth="200.0">
                                       <columns>
                                           <TableColumn fx:id="memberRoleIdCol" prefWidth="75.0" text="ID" />
-                                        <TableColumn fx:id="memberRoleCol" prefWidth="75.0" text="Role" />
+                                        <TableColumn fx:id="memberRoleCol" prefWidth="103.19998168945312" text="Role" />
                                       </columns>
                                     </TableView>
                                     <TableView fx:id="MemberStatusTable" prefHeight="200.0" prefWidth="200.0">
                                       <columns>
                                           <TableColumn fx:id="memberStatusIdCol" prefWidth="75.0" text="ID" />
-                                        <TableColumn fx:id="memberStatusCol" prefWidth="75.0" text="Status" />
+                                        <TableColumn fx:id="memberStatusCol" prefWidth="105.60003662109375" text="Status" />
                                       </columns>
                                     </TableView>
                                 </items>
