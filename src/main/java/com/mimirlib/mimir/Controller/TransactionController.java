@@ -197,12 +197,20 @@ public class TransactionController {
     }
 
     private void updateButtonStates() {
+
+        TransactionViewModel selectedTransaction = mainTable.getSelectionModel().getSelectedItem();
+        boolean hasSelection = selectedTransaction != null;
+        boolean hasReturnDate = hasSelection && selectedTransaction.getReturnDate() != null;
+
+        refreshButton.setDisable(false);
+
         boolean hasSelection = mainTable.getSelectionModel().getSelectedItem() != null;
         refreshButton.setDisable(false); // Always enable refresh
+      
         bookBtn.setDisable(!hasSelection);
         memBtn.setDisable(!hasSelection);
-        statusBtn.setDisable(!hasSelection);
-        returnBtn.setDisable(!hasSelection);
+        statusBtn.setDisable(!hasSelection || hasReturnDate);
+        returnBtn.setDisable(!hasSelection || hasReturnDate);
     }
 
     @FXML
@@ -230,7 +238,12 @@ public class TransactionController {
             Parent root = loader.load();
 
             StatusFormController statusController = loader.getController();
-            statusController.setTransactionController(this);
+            if (statusController == null) {
+                throw new IllegalStateException("Failed to load StatusFormController");
+            } else {
+                statusController.setTransactionController(this);
+            }
+
 
             TransactionViewModel selectedTransaction = mainTable.getSelectionModel().getSelectedItem();
             if (selectedTransaction == null) {
@@ -295,7 +308,10 @@ public class TransactionController {
                 System.out.println("Return date selected: " + returnDate);
                 TransactionViewModel selectedTransaction = mainTable.getSelectionModel().getSelectedItem(); // Get selected transaction again
                 if (selectedTransaction != null) {
+
+                    updateBookReturn(returnDate, selectedTransaction.getTransactionId(), selectedTransaction.getBookId());
                     updateBookReturn(returnDate, selectedTransaction.getTransactionId()); // Get borrowId from table
+
                 } else {
                     System.err.println("Error: No transaction selected after date form.");
                 }
@@ -309,6 +325,9 @@ public class TransactionController {
         }
     }
 
+
+    private void updateBookReturn(LocalDate returnDate, int transactionId, int bookId) throws SQLException {
+
     /**
      * FIX TRANSACTION SHIT!!!!
      * @param returnDate
@@ -317,11 +336,17 @@ public class TransactionController {
      */
 
     private void updateBookReturn(LocalDate returnDate, int transactionId) throws SQLException {
+
         TransactionViewModel selectedTransaction = mainTable.getSelectionModel().getSelectedItem();
         if (selectedTransaction == null) {
             System.err.println("Error: No transaction selected.");
             return;
         }
+
+
+        int returnedStatusId = dbasecon.getTransactionStatuses().stream()  // Use getTransactionStatuses()
+                .filter(status -> status.getStatus().equalsIgnoreCase("Returned"))
+
         int bookId = selectedTransaction.getBookId();
 
         // Update the borrow record with the return date
@@ -330,9 +355,19 @@ public class TransactionController {
         // Retrieve StatusID for "Available"
         int availableStatusId = dbasecon.getBookStatuses().stream()
                 .filter(status -> status.getStatus().equals("Available"))
+
                 .map(BookStatus::getStatusId)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid available status"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid status"));
+
+
+        int availableStatusId = dbasecon.getBookStatuses().stream()  // Use getTransactionStatuses()
+                .filter(status -> status.getStatus().equalsIgnoreCase("Available"))
+                .map(BookStatus::getStatusId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid status"));
+
+        dbasecon.updateBorrow(selectedTransaction, returnDate, returnedStatusId);
 
         // Update book status using StatusID
         dbasecon.updateBookStatus(bookId, availableStatusId);
@@ -391,20 +426,33 @@ public class TransactionController {
 
         for (TransactionViewModel transaction : transactions) {
             LocalDate dueDate = transaction.getDueDate();
-            int bookId = transaction.getBookId();
+            LocalDate returnDate = transaction.getReturnDate(); // Added return date check
+            int id = transaction.getTransactionId();
             int currentStatusId = transaction.getStatusId();
+
+
+            int overdueStatusId = dbasecon.getTransactionStatuses().stream()
+                    .filter(status -> status.getStatus().equalsIgnoreCase("Overdue"))
 
             // Retrieve StatusID for "Overdue"
             int overdueStatusId = dbasecon.getBookStatuses().stream()
                     .filter(status -> status.getStatus().equals("Overdue"))
+
                     .map(BookStatus::getStatusId)
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid overdue status"));
+
+
+            // Ensure the book is overdue AND has not been returned
+            if (dueDate != null && currentDate.isAfter(dueDate) && returnDate == null && currentStatusId != overdueStatusId) {
+                dbasecon.updateBorrowStatus(id, overdueStatusId);
+                System.out.println("Book ID " + id + " marked as Overdue.");
 
             // If past due and not already marked as Overdue, update status
             if (dueDate != null && currentDate.isAfter(dueDate) && currentStatusId != overdueStatusId) {
                 dbasecon.updateBookStatus(bookId, overdueStatusId);
                 System.out.println("Book ID " + bookId + " marked as Overdue.");
+
             }
         }
 
@@ -455,6 +503,15 @@ public class TransactionController {
         System.out.println(" Data is valid");
         return true;
     }
+
+
+    private boolean canBorrowAgain(int bookId, int memberId) throws SQLException {
+        return dbasecon.getAllTransactions().stream()
+                .filter(t -> t.getBookId() == bookId && t.getMemberId() == memberId)
+                .noneMatch(t -> t.getReturnDate() == null); // Allows borrowing only if previous loan is still active
+    }
+
+    //private boolean
 
     private void persistBorrowTransaction(int bookId, int memberId, LocalDate borrowDate, LocalDate dueDate, int statusId) throws SQLException {
         System.out.println("Adding new borrow record");

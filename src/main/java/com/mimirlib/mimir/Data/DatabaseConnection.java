@@ -656,7 +656,7 @@ public class DatabaseConnection {
         }
     }
 
-    public void updateBorrow(TransactionViewModel transaction) {
+    public void updateBorrow(TransactionViewModel transaction, LocalDate returnDate, int statusId) {
         try {
             executeBorrowProcedure(
                     true, // This marks the operation as an update
@@ -665,8 +665,8 @@ public class DatabaseConnection {
                     transaction.getMemberId(),
                     transaction.getBorrowDate(),
                     transaction.getDueDate(),
-                    transaction.getReturnDate(),
-                    transaction.getStatusId()  // Ensure StatusID is passed
+                    returnDate, // Pass returnDate explicitly
+                    statusId // Pass statusId explicitly
             );
             System.out.println("Borrow record updated successfully.");
         } catch (Exception e) {
@@ -684,6 +684,16 @@ public class DatabaseConnection {
             System.err.println("Error updating book status: " + e.getMessage());
         }
 
+
+    public void updateBorrowStatus(int borrowId, int statusId)  {
+        try {
+            String procedureName = "UpdateTransactionStatus";
+            Object[] parameters = {borrowId, statusId};
+
+            executeProcedure(procedureName, parameters);
+        } catch (Exception e) {
+            System.err.println("Error updating borrow status: " + e.getMessage());
+        }
     }
 
     public void updateBookCategory(BookCategory category) {

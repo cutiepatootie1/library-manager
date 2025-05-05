@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.mimirlib.mimir.Data.*;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -106,17 +107,51 @@ public class BookController {
         extIdCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
         extTitleCol.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
         extAuthCol.setCellValueFactory(cellData -> cellData.getValue().authorProperty());
-        extCatCol.setCellValueFactory(cellData -> cellData.getValue().categoryNameProperty());
-        extGenCol.setCellValueFactory(cellData -> cellData.getValue().genreNameProperty());
-        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+//        extCatCol.setCellValueFactory(cellData -> cellData.getValue().categoryNameProperty());
+//        extGenCol.setCellValueFactory(cellData -> cellData.getValue().genreNameProperty());
+//        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+        extCatCol.setCellValueFactory(cellData -> new SimpleStringProperty(
+                dbasecon.getAllCategories().stream()
+                        .filter(cat -> cat.getCategoryId() == cellData.getValue().getCategoryId()) // Match by ID
+                        .map(BookCategory::getCategoryName) // Display Name
+                        .findFirst()
+                        .orElse("Unknown")
+        ));
+
+        extGenCol.setCellValueFactory(cellData -> new SimpleStringProperty(
+                dbasecon.getAllGenres().stream()
+                        .filter(gen -> gen.getGenreId() == cellData.getValue().getGenreId()) // Match by ID
+                        .map(BookGenre::getGenreName) // Display Name
+                        .findFirst()
+                        .orElse("Unknown")
+        ));
+
+        extStatus.setCellValueFactory(cellData -> new SimpleStringProperty(
+                dbasecon.getBookStatuses().stream()
+                        .filter(stat -> stat.getStatusId() == cellData.getValue().getStatusId()) // Match by ID
+                        .map(BookStatus::getStatus) // Display Name
+                        .findFirst()
+                        .orElse("Unknown")
+        ));
+
     }
 
     private void setupTableSelectionListener() {
         mainTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
                 extBookTable.setItems(FXCollections.observableArrayList(newSel));
+
+                try {
+                    boolean isBorrowed = isBookCurrentlyBorrowed(newSel.getId());
+                    borrowBtn.setDisable(isBorrowed); // Disable borrow if book is already borrowed
+                    deleteBtn.setDisable(isBorrowed); // Disable delete if book is currently borrowed
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Error checking borrow status", e);
+                }
+
                 borrowBtn.setDisable(false);
                 deleteBtn.setDisable(false);
+
                 resetBtn.setDisable(false);
             } else {
                 extBookTable.getItems().clear();
@@ -133,40 +168,31 @@ public class BookController {
     @FXML
     private void editInitialize() throws SQLException{
         extBookTable.setEditable(true);
-        // Fetch categories as BookCategory objects with ID, Code, and Name
+        // Fetch categories, genres, and statuses
         List<BookCategory> catList = dbasecon.getAllCategories();
-
-        // Fetch genres as BookGenre objects with ID, Code, and Name
         List<BookGenre> genList = dbasecon.getAllGenres();
-
-        // Fetch statuses as BookStatus objects with ID and Status Name
         List<BookStatus> statusList = dbasecon.getBookStatuses();
-
 
         // Convert lists to ObservableList for UI binding
         ObservableList<String> categories = FXCollections.observableArrayList(
-                catList.stream()
-                        .map(cat -> cat.getCategoryCode() + " - " + cat.getCategoryName())
-                        .collect(Collectors.toList())
+                catList.stream().map(BookCategory::getCategoryName).collect(Collectors.toList())
         );
 
         ObservableList<String> genres = FXCollections.observableArrayList(
-                genList.stream()
-                        .map(gen -> gen.getGenreCode() + " - " + gen.getGenreName())
-                        .collect(Collectors.toList())
+                genList.stream().map(BookGenre::getGenreName).collect(Collectors.toList())
         );
 
-        ObservableList<String> status = FXCollections.observableArrayList(
-                statusList.stream()
-                        .map(stat -> stat.getStatus()) // Only display status name
-                        .collect(Collectors.toList())
+        ObservableList<String> statuses = FXCollections.observableArrayList(
+                statusList.stream().map(BookStatus::getStatus).collect(Collectors.toList())
         );
 
         extTitleCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extAuthCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extCatCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(categories));
         extGenCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(genres));
-        extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(status));
+        extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(statuses));
+
+        configureEditCommitHandlers();
 
         extTitleCol.setOnEditCommit(event -> {
             Book book = event.getRowValue();
@@ -184,24 +210,58 @@ public class BookController {
 
         extCatCol.setOnEditCommit(event -> {
             Book book = event.getRowValue();
-            book.idProperty().getValue();
-            book.categoryNameProperty().set(event.getNewValue().split(" ")[0]);
+            String selectedCategoryName = event.getNewValue();
+
+            int categoryId = dbasecon.getAllCategories().stream()
+                    .filter(cat -> cat.getCategoryName().equalsIgnoreCase(selectedCategoryName))
+                    .map(BookCategory::getCategoryId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid category selected"));
+
+            // Update the Book object with the new ID and name
+            book.categoryIdProperty().set(categoryId);
+            book.categoryNameProperty().set(selectedCategoryName);
+
+            // Save changes to the database
             dbasecon.updateBook(book);
         });
 
         extGenCol.setOnEditCommit(event -> {
             Book book = event.getRowValue();
-            book.idProperty().getValue();
-            book.genreNameProperty().set(event.getNewValue().split(" ")[0]);
+            String selectedGenreName = event.getNewValue();
+
+            int genreId = dbasecon.getAllGenres().stream()
+                    .filter(gen -> gen.getGenreName().equalsIgnoreCase(selectedGenreName))
+                    .map(BookGenre::getGenreId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid genre selected"));
+
+            // Update the Book object with the new ID and name
+            book.genreIdProperty().set(genreId);
+            book.genreNameProperty().set(selectedGenreName);
+
+            // Save changes to the database
             dbasecon.updateBook(book);
         });
 
         extStatus.setOnEditCommit(event -> {
             Book book = event.getRowValue();
-            book.idProperty().getValue();
-            book.statusProperty().set(event.getNewValue());
+            String selectedStatusName = event.getNewValue();
+
+            int statusId = dbasecon.getBookStatuses().stream()
+                    .filter(stat -> stat.getStatus().equalsIgnoreCase(selectedStatusName))
+                    .map(BookStatus::getStatusId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
+
+            // Update the Book object with the new ID and status name
+            book.statusIdProperty().set(statusId);
+            book.statusProperty().set(selectedStatusName);
+
+            // Save changes to the database
             dbasecon.updateBook(book);
         });
+
     }
 
     @FXML
@@ -410,13 +470,64 @@ public class BookController {
                 dateStage.showAndWait();
                 transactionController.saveBorrowTransaction(selectedBookId, selectedMemberId, dateFormController.getBorrowDate(), dateFormController.getSelectedDate(), dateFormController);
                 memberController.membersPanel(false);
+                refreshTables();
             } else {
                 System.out.println("No member selected.");
                 memberController.membersPanel(false);
             }
-        } catch (IOException e) {
+        } catch (IOException | SQLException e) {
             logger.log(Level.SEVERE, "Error showing member selection", e);
         }
+    }
+
+
+    public boolean isBookCurrentlyBorrowed(int bookId) {
+        return dbasecon.getAllTransactions().stream()
+                .anyMatch(t -> t.getBookId() == bookId && t.getReturnDate() == null);
+    }
+
+    private void configureEditCommitHandlers() {
+        extCatCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            String selectedCategoryName = event.getNewValue();
+
+            int categoryId = dbasecon.getAllCategories().stream()
+                    .filter(cat -> cat.getCategoryName().equalsIgnoreCase(selectedCategoryName))
+                    .map(BookCategory::getCategoryId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid category selected"));
+
+            book.categoryIdProperty().set(categoryId); // Store ID instead of Name
+            dbasecon.updateBook(book);
+        });
+
+        extGenCol.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            String selectedGenreName = event.getNewValue();
+
+            int genreId = dbasecon.getAllGenres().stream()
+                    .filter(gen -> gen.getGenreName().equalsIgnoreCase(selectedGenreName))
+                    .map(BookGenre::getGenreId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid genre selected"));
+
+            book.genreIdProperty().set(genreId); // Store ID instead of Name
+            dbasecon.updateBook(book);
+        });
+
+        extStatus.setOnEditCommit(event -> {
+            Book book = event.getRowValue();
+            String selectedStatusName = event.getNewValue();
+
+            int statusId = dbasecon.getBookStatuses().stream()
+                    .filter(stat -> stat.getStatus().equalsIgnoreCase(selectedStatusName))
+                    .map(BookStatus::getStatusId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
+
+            book.statusIdProperty().set(statusId); // Store ID instead of Name
+            dbasecon.updateBook(book);
+        });
     }
 
 }

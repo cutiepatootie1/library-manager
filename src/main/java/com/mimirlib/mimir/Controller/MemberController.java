@@ -149,21 +149,23 @@ public class MemberController {
         List<MemberRole> roleList = dbasecon.getAllRoles();
         List<MemberStatus> statusList = dbasecon.getMemberStatuses();
 
-        List<String> formattedRoles = roleList.stream()
-                .map(rol -> rol.getRole())
-                .collect(Collectors.toList());
-        List<String> formattedStatusses = statusList.stream()
-                .map(sta -> sta.getStatus())
-                .collect(Collectors.toList());
+        // Convert role & status lists to display names in dropdown
+        ObservableList<String> roles = FXCollections.observableArrayList(
+                roleList.stream().map(MemberRole::getRole).collect(Collectors.toList())
+        );
 
-        ObservableList<String> roles = FXCollections.observableArrayList(formattedRoles);
-        ObservableList<String> status = FXCollections.observableArrayList(formattedStatusses);
+        ObservableList<String> statuses = FXCollections.observableArrayList(
+                statusList.stream().map(MemberStatus::getStatus).collect(Collectors.toList())
+        );
+
+//        ObservableList<String> roles = FXCollections.observableArrayList(formattedRoles);
+//        ObservableList<String> status = FXCollections.observableArrayList(formattedStatusses);
 
         extNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extEmailCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extContCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extRoleCol.setCellFactory(ChoiceBoxTableCell.forTableColumn(roles));
-        extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(status));
+        extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(statuses));
 
         setupEditCommitHandlers();
     }
@@ -194,15 +196,46 @@ public class MemberController {
     }
 
     private void setupEditCommitHandlers() {
+        // Standard text edits
         extNameCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.nameProperty().set(newValue)));
         extEmailCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.emailProperty().set(newValue)));
-
-
         extContCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.contactNumProperty().set(newValue)));
-        extRoleCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.roleProperty().set(newValue)));
 
+        // **Fix Role selection to store ID instead of name**
+        extRoleCol.setOnEditCommit(event -> {
+            Member member = event.getRowValue();
+            String selectedRoleName = event.getNewValue();
 
-        extStatus.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.statusProperty().set(newValue)));
+            int roleId = dbasecon.getAllRoles().stream()
+                    .filter(role -> role.getRole().equalsIgnoreCase(selectedRoleName))
+                    .map(MemberRole::getRoleId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid role selected"));
+
+            // Store ID instead of Name
+            member.roleIdProperty().set(roleId);
+            member.roleProperty().set(selectedRoleName); // Still show name in UI
+
+            dbasecon.updateMember(member);
+        });
+
+        // **Fix Status selection to store ID instead of name**
+        extStatus.setOnEditCommit(event -> {
+            Member member = event.getRowValue();
+            String selectedStatusName = event.getNewValue();
+
+            int statusId = dbasecon.getMemberStatuses().stream()
+                    .filter(stat -> stat.getStatus().equalsIgnoreCase(selectedStatusName))
+                    .map(MemberStatus::getStatusId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
+
+            // Store ID instead of Name
+            member.statusIdProperty().set(statusId);
+            member.statusProperty().set(selectedStatusName); // Still show name in UI
+
+            dbasecon.updateMember(member);
+        });
     }
 
     @FXML
@@ -326,35 +359,37 @@ public class MemberController {
 
     public void showMemberSelection(ActionEvent event) {
         try {
-            // 1. Load the FXML (as before)
+            // Load the FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mimirlib/mimir/member.fxml"));
             Parent root = loader.load();
             MemberController selectionController = loader.getController();
 
+            // Retrieve only active members
+            List<Member> activeMembers = dbasecon.getAllMembers().stream()
+                    .filter(member -> member.getStatus().equalsIgnoreCase("Active")) // Filter active members
+                    .collect(Collectors.toList());
 
-            // 2. Configure the controller for borrow mode (if needed)
-            selectionController.membersPanel(this.isBorrow);  //  THIS IS IMPORTANT!
+            // Load only active members into the table
+            selectionController.loadFilteredMembers(activeMembers);
 
+            // Configure borrow mode (if needed)
+            selectionController.membersPanel(this.isBorrow);
 
-            // 3. Set up the stage (as before)
+            // Set up the stage
             Stage stage = new Stage();
-            stage.setTitle("Select Member");
+            stage.setTitle("Select Active Member");
             stage.setScene(new Scene(root));
             stage.initModality(Modality.WINDOW_MODAL);
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
 
-
-            // 4. Show and wait
+            // Show and wait
             stage.showAndWait();
 
-
-            // 5. (Important) Get the selected member AFTER the stage is closed
+            // Get the selected member AFTER the window closes
             this.selectedMemberId = selectionController.getSelectedMemberId();
             this.selectedMember = selectionController.getSelectedMember();
-
-
         } catch (IOException e) {
-            System.out.println("Error: " + e);
+            logger.log(Level.SEVERE, "Error opening member selection window", e);
         }
     }
 
@@ -421,6 +456,10 @@ public class MemberController {
 
     private interface MemberPropertyUpdater {
         void update(Member member, String newValue);
+    }
+
+    public void loadFilteredMembers(List<Member> filteredMembers) {
+        mainTable.setItems(FXCollections.observableArrayList(filteredMembers));
     }
 
     private void updateMemberProperty(TableColumn.CellEditEvent<Member, String> event, MemberPropertyUpdater updater) {

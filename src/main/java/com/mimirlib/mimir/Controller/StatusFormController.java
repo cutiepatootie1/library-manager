@@ -1,6 +1,7 @@
 package com.mimirlib.mimir.Controller;
 
 import com.mimirlib.mimir.Data.BookStatus;
+import com.mimirlib.mimir.Data.DatabaseConnection;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -13,6 +14,7 @@ import com.mimirlib.mimir.Data.TransactionViewModel;
 public class StatusFormController {
 
     private static final Logger logger = Logger.getLogger(StatusFormController.class.getName());
+    final DatabaseConnection dbasecon = new DatabaseConnection();
 
     @FXML
     private ChoiceBox<String> statusBox;
@@ -22,6 +24,10 @@ public class StatusFormController {
     private TransactionController transactionController;
     private TransactionViewModel selectedTransaction;
     private String currentStatus;
+
+//    public StatusFormController() {
+//        setTransactionController();
+//    }
 
     public void setTransactionController(TransactionController transactionController) {
         this.transactionController = transactionController;
@@ -41,7 +47,29 @@ public class StatusFormController {
     }
 
     public void initialize() {
+
+        loadTransactionStatuses();
+    }
+
+    private void loadTransactionStatuses() {
+        try {
+            List<BookStatus> transactionStatusList = dbasecon.getTransactionStatuses(); // Use the provided method
+            List<String> statusNames = transactionStatusList.stream()
+                    .map(BookStatus::getStatus)
+                    .collect(Collectors.toList());
+
+            statusBox.getItems().addAll(statusNames);
+
+            if (currentStatus != null) {
+                statusBox.setValue(currentStatus);
+            }
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error loading transaction statuses", e);
+            System.err.println("Error loading transaction statuses: " + e.getMessage());
+        }
         statusBox.getItems().addAll("Borrowed", "Overdue", "Available");
+
     }
 
     @FXML
@@ -60,9 +88,13 @@ public class StatusFormController {
                 selectedTransaction.setStatusId(statusId);  // Set the StatusID
                 selectedTransaction.setBookStatus(selectedStatus); // Maintain readable name for UI
 
+
+                transactionController.dbasecon.updateBorrowStatus(selectedTransaction.getTransactionId(), statusId);
+                System.out.println("Transaction status updated to: " + selectedStatusName);
                 // Update book status in the database using BookID and StatusID
                 transactionController.dbasecon.updateBookStatus(selectedTransaction.getBookId(), statusId);
                 System.out.println("Transaction and book status updated to: " + selectedStatus);
+
 
                 // Close the status update window
                 Stage stage = (Stage) confirmStatusBtn.getScene().getWindow();
