@@ -1,6 +1,7 @@
 package com.mimirlib.mimir.Controller;
 
 import com.mimirlib.mimir.Data.BookStatus;
+import com.mimirlib.mimir.Data.DatabaseConnection;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 public class StatusFormController {
 
     private static final Logger logger = Logger.getLogger(StatusFormController.class.getName());
+    final DatabaseConnection dbasecon = new DatabaseConnection();
 
     @FXML
     private ChoiceBox<String> statusBox;
@@ -24,6 +26,10 @@ public class StatusFormController {
     private TransactionController transactionController;
     private TransactionViewModel selectedTransaction;
     private String currentStatus;
+
+//    public StatusFormController() {
+//        setTransactionController();
+//    }
 
     public void setTransactionController(TransactionController transactionController) {
         this.transactionController = transactionController;
@@ -48,7 +54,7 @@ public class StatusFormController {
 
     private void loadTransactionStatuses() {
         try {
-            List<BookStatus> transactionStatusList = transactionController.dbasecon.getTransactionStatuses(); // Use the provided method
+            List<BookStatus> transactionStatusList = dbasecon.getTransactionStatuses(); // Use the provided method
             List<String> statusNames = transactionStatusList.stream()
                     .map(BookStatus::getStatus)
                     .collect(Collectors.toList());
@@ -80,7 +86,7 @@ public class StatusFormController {
                 selectedTransaction.setStatusId(statusId);
                 selectedTransaction.setBookStatus(selectedStatusName);
 
-                transactionController.dbasecon.updateBookStatus(selectedTransaction.getBookId(), statusId);
+                transactionController.dbasecon.updateBorrowStatus(selectedTransaction.getTransactionId(), statusId);
                 System.out.println("Transaction status updated to: " + selectedStatusName);
 
                 Stage stage = (Stage) confirmStatusBtn.getScene().getWindow();
