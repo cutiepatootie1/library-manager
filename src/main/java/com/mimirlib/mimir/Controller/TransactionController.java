@@ -16,7 +16,10 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -28,6 +31,8 @@ public class TransactionController {
     private MemberController memberController;
     private BookController bookController;
     private MainController mainController;
+
+    private Map<String, Integer> statusMap = new HashMap<>(); // Store status name → ID mappings
 
     // Transaction function UI related stuff
     @FXML
@@ -99,17 +104,38 @@ public class TransactionController {
         }
     }
 
+//    private void initializeStatusBox() {
+//        try {
+//            List<BookStatus> transactionStatuses = dbasecon.getTransactionStatuses(); // Fetch transaction statuses
+//            List<String> statusNames = transactionStatuses.stream()
+//                    .map(BookStatus::getStatus)
+//                    .collect(Collectors.toList());
+//            statusBox.setItems(FXCollections.observableArrayList(statusNames));
+//            statusBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+//                System.out.println("Selected Status: " + newValue);
+//            });
+//            System.out.println("Status initialized.");
+//        } catch (Exception e) {
+//            System.out.println("Status initialization error: " + e.getMessage());
+//        }
+//    }
     private void initializeStatusBox() {
         try {
-            List<BookStatus> transactionStatuses = dbasecon.getTransactionStatuses(); // Fetch transaction statuses
-            List<String> statusNames = transactionStatuses.stream()
-                    .map(BookStatus::getStatus)
-                    .collect(Collectors.toList());
+            List<BookStatus> transactionStatuses = dbasecon.getTransactionStatuses();
+
+            if (transactionStatuses.isEmpty()) {
+                System.out.println("Warning: No statuses retrieved from the database.");
+                return;
+            }
+
+            List<String> statusNames = new ArrayList<>();
+            for (BookStatus status : transactionStatuses) {
+                statusNames.add(status.getStatus());
+                statusMap.put(status.getStatus(), status.getStatusId()); // Store mapping
+            }
+
             statusBox.setItems(FXCollections.observableArrayList(statusNames));
-            statusBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
-                System.out.println("Selected Status: " + newValue);
-            });
-            System.out.println("Status initialized.");
+            System.out.println("Status initialized with " + statusMap.size() + " entries.");
         } catch (Exception e) {
             System.out.println("Status initialization error: " + e.getMessage());
         }
@@ -219,33 +245,80 @@ public class TransactionController {
     }
 
     @FXML
-    public void refreshTables() {
-        loadTransactionsData();
+    public void refreshTables() throws SQLException {
+        System.out.println("Refreshing transaction data...");
+
+        // Store the currently selected transaction
+        TransactionViewModel selectedTransaction = mainTable.getSelectionModel().getSelectedItem();
+
+        // Reload transactions from the database
+        List<TransactionViewModel> transactions = dbasecon.getAllTransactions();
+        ObservableList<TransactionViewModel> transactionList = FXCollections.observableArrayList(transactions);
+        mainTable.setItems(transactionList);
+
+        // Clear search field
+        searchFld.clear();
+
+        // Reset choice box (dropdown selection)
+        statusBox.getSelectionModel().clearSelection();
+
+        // **Reset stored status selection in model class**
+        BookStatus.setSelectedStatus(null);
+
+        // Restore selection if transaction still exists
+        if (selectedTransaction != null && transactionList.contains(selectedTransaction)) {
+            mainTable.getSelectionModel().select(selectedTransaction);
+            extTransactionTable.setItems(FXCollections.observableArrayList(selectedTransaction));
+        } else {
+            extTransactionTable.getItems().clear(); // Clear extended table if no selection
+        }
+
+        // Update button states dynamically
+        updateButtonStates();
     }
 
     @FXML
+//    public void handleSearchFilterSort() throws SQLException {
+//        String searchTitle = searchFld.getText();
+//        String searchName = searchFld.getText();
+//        String filterStatus = statusBox.getValue();
+//
+//        // Need to get StatusID from Status Name
+//        Integer filterStatusId = null;
+//        if (filterStatus != null && !filterStatus.isEmpty()) {
+//            filterStatusId = dbasecon.getTransactionStatuses().stream()
+//                    .filter(bs -> bs.getStatus().equalsIgnoreCase(filterStatus))
+//                    .findFirst()
+//                    .map(BookStatus::getStatusId)
+//                    .orElse(null); // Or handle the case where the status isn't found
+//        } else {
+//            System.out.println("Filter status = " + filterStatusId);
+//        }
+//
+//        List<TransactionViewModel> filteredTransactions = dbasecon.searchFilterSortTransactions(searchTitle, searchName, filterStatusId);
+//        mainTable.setItems(FXCollections.observableArrayList(filteredTransactions));
+//
+//        System.out.println(filteredTransactions);
+//        System.out.println("Clicked button");
+//    }
     public void handleSearchFilterSort() throws SQLException {
         String searchTitle = searchFld.getText();
         String searchName = searchFld.getText();
         String filterStatus = statusBox.getValue();
 
-        // Need to get StatusID from Status Name
-        Integer filterStatusId = null;
-        if (filterStatus != null && !filterStatus.isEmpty()) {
-            filterStatusId = dbasecon.getTransactionStatuses().stream()
-                    .filter(bs -> bs.getStatus().equalsIgnoreCase(filterStatus))
-                    .findFirst()
-                    .map(BookStatus::getStatusId)
-                    .orElse(null); // Or handle the case where the status isn't found
-        } else {
-            System.out.println("Filter status = " + filterStatusId);
-        }
+        // Ensure wildcards are properly formatted for LIKE queries
+        String formattedTitle = (searchTitle != null && !searchTitle.isEmpty()) ? "%" + searchTitle + "%" : null;
+        String formattedName = (searchName != null && !searchName.isEmpty()) ? "%" + searchName + "%" : null;
 
-        List<TransactionViewModel> filteredTransactions = dbasecon.searchFilterSortTransactions(searchTitle, searchName, filterStatusId);
+        // Ensure we retrieve the correct Status ID for filtering
+        Integer filterStatusId = (filterStatus != null && statusMap.containsKey(filterStatus)) ? statusMap.get(filterStatus) : null;
+        //Integer filterStatusId = (BookStatus.getSelectedStatus() != null) ? BookStatus.getSelectedStatus().getStatusId() : null;
+
+        System.out.println(filterStatusId);
+        List<TransactionViewModel> filteredTransactions = dbasecon.searchFilterSortTransactions(formattedTitle, formattedName, filterStatusId);
         mainTable.setItems(FXCollections.observableArrayList(filteredTransactions));
 
-        System.out.println(filteredTransactions);
-        System.out.println("Clicked button");
+        System.out.println("Filtered Transactions: " + filteredTransactions);
     }
 
     @FXML

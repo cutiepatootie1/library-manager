@@ -116,10 +116,16 @@ public class DatabaseConnection {
                 "CREATE PROCEDURE GetAllRoles() BEGIN SELECT RoleID, Role FROM MemberRoles WHERE Deleted = FALSE; END",
                 "CREATE PROCEDURE GetAllTransaction() BEGIN SELECT t.BorrowID, t.BookID, b.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, t.StatusID, s.Status FROM Borrowing t JOIN Books b ON t.BookID = b.BookID JOIN Members m ON t.MemberID = m.MemberID JOIN BookStatus s ON t.StatusID = s.StatusID WHERE s.Transaction = TRUE; END",
 
-                "CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryID INT, IN genreID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND (Title LIKE ''%', searchTitle, '%'' OR Author LIKE ''%', searchTitle, '%'' )'); END IF; IF categoryID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryID = ', categoryID); END IF; IF genreID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreID = ', genreID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
-                //"CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255),  IN searchAuthor VARCHAR(255),  IN categoryID INT,  IN genreID INT,  IN statusID INT) BEGIN  SET @query = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN  SET @query = CONCAT(@query, ' AND (Title LIKE CONCAT(\"%\", ?, \"%\") OR Author LIKE CONCAT(\"%\", ?, \"%\"))'); END IF;  IF categoryID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND CategoryID = ?'); END IF;  IF genreID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND GenreID = ?'); END IF;  IF statusID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND StatusID = ?'); END IF;  PREPARE stmt FROM @query;  EXECUTE stmt USING searchTitle, searchAuthor, categoryID, genreID, statusID;  DEALLOCATE PREPARE stmt; END",          "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Members WHERE Deleted = FALSE'; IF searchName IS NOT NULL AND LENGTH(searchName) > 0 THEN SET finalQuery = CONCAT(finalQuery, ' AND (Name LIKE ''%', searchName, '%'' OR Email LIKE ''%', searchName, '%'' OR PhoneNumber LIKE ''%', searchName, '%'' )'); END IF; IF roleID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND RoleID = ', roleID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
-                "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Members WHERE Deleted = FALSE'; IF searchName IS NOT NULL AND LENGTH(searchName) > 0 THEN SET finalQuery = CONCAT(finalQuery, ' AND (Name LIKE ''%', searchName, '%'' OR Email LIKE ''%', searchName, '%'' OR PhoneNumber LIKE ''%', searchName, '%'' )'); END IF; IF roleID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND RoleID = ', roleID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
-                "CREATE PROCEDURE SearchFilterSortTransactions(IN searchTitle VARCHAR(255), IN searchName VARCHAR(255), IN filterStatusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT t.BorrowID, t.BookID, bks.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, bks.StatusID FROM Borrowing t JOIN Books bks ON t.BookID = bks.BookID JOIN Members m ON t.MemberID = m.MemberID WHERE bks.Deleted = FALSE AND m.Deleted = FALSE'; IF (searchTitle IS NOT NULL AND LENGTH(searchTitle) > 0) OR (searchName IS NOT NULL AND LENGTH(searchName) > 0) THEN SET finalQuery = CONCAT(finalQuery, ' AND (bks.Title LIKE ''%', searchTitle, '%'' OR m.Name LIKE ''%', searchName, '%'' )'); END IF; IF filterStatusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND bks.StatusID = ', filterStatusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                //"CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryID INT, IN genreID INT, IN statusID INT) BEGIN SET @finalQuery = 'SELECT b.BookID, b.Title, b.Author, c.CategoryID, c.CategoryCode, c.CategoryName, g.GenreID, g.GenreCode, g.GenreName, s.StatusID, s.Status FROM Books b LEFT JOIN BookCategories c ON b.CategoryID = c.CategoryID LEFT JOIN BookGenres g ON b.GenreID = g.GenreID LEFT JOIN BookStatus s ON b.StatusID = s.StatusID WHERE b.Deleted = FALSE' + IF(searchTitle IS NOT NULL AND searchTitle <> '', CONCAT(' AND (b.Title LIKE ''%', searchTitle '%" OR b.Author LIKE ''%',, searchAuthor, '%")'), '') + IF(categoryID IS NOT NULL, CONCAT(' AND b.CategoryID = ', categoryID), '') + IF(genreID IS NOT NULL, CONCAT(' AND b.GenreID = ', genreID), '') + IF(statusID IS NOT NULL, CONCAT(' AND b.StatusID = ', statusID), ''); PREPARE stmt FROM @finalQuery; EXECUTE stmt; DEALLOCATE PREPARE stmt; END;",
+                "CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryID INT, IN genreID INT, IN statusID INT) BEGIN SET @finalQuery = CONCAT('SELECT b.BookID, b.Title, b.Author, c.CategoryID, c.CategoryCode, c.CategoryName, g.GenreID, g.GenreCode, g.GenreName, s.StatusID, s.Status FROM Books b LEFT JOIN BookCategories c ON b.CategoryID = c.CategoryID LEFT JOIN BookGenres g ON b.GenreID = g.GenreID LEFT JOIN BookStatus s ON b.StatusID = s.StatusID WHERE b.Deleted = FALSE', IF(searchTitle IS NOT NULL AND searchTitle <> '', CONCAT(' AND (b.Title LIKE ''%', searchTitle, '%'' OR b.Author LIKE ''%', searchAuthor, '%'')'), ''), IF(categoryID IS NOT NULL, CONCAT(' AND b.CategoryID = ', categoryID), ''), IF(genreID IS NOT NULL, CONCAT(' AND b.GenreID = ', genreID), ''), IF(statusID IS NOT NULL, CONCAT(' AND b.StatusID = ', statusID), '')); PREPARE stmt FROM @finalQuery; EXECUTE stmt; DEALLOCATE PREPARE stmt; END;",
+
+                // Previous one: "CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255), IN searchAuthor VARCHAR(255), IN categoryID INT, IN genreID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN SET finalQuery = CONCAT(finalQuery, ' AND (Title LIKE ''%', searchTitle, '%'' OR Author LIKE ''%', searchTitle, '%'' )'); END IF; IF categoryID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND CategoryID = ', categoryID); END IF; IF genreID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND GenreID = ', genreID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                //"CREATE PROCEDURE SearchFilterSortBooks(IN searchTitle VARCHAR(255),  IN searchAuthor VARCHAR(255),  IN categoryID INT,  IN genreID INT,  IN statusID INT) BEGIN  SET @query = 'SELECT * FROM Books WHERE Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN  SET @query = CONCAT(@query, ' AND (Title LIKE CONCAT(\"%\", ?, \"%\") OR Author LIKE CONCAT(\"%\", ?, \"%\"))'); END IF;  IF categoryID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND CategoryID = ?'); END IF;  IF genreID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND GenreID = ?'); END IF;  IF statusID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND StatusID = ?'); END IF;  PREPARE stmt FROM @query;  EXECUTE stmt USING searchTitle, searchAuthor, categoryID, genreID, statusID;  DEALLOCATE PREPARE stmt; END",
+                // "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Members WHERE Deleted = FALSE'; IF searchName IS NOT NULL AND LENGTH(searchName) > 0 THEN SET finalQuery = CONCAT(finalQuery, ' AND (Name LIKE ''%', searchName, '%'' OR Email LIKE ''%', searchName, '%'' OR PhoneNumber LIKE ''%', searchName, '%'' )'); END IF; IF roleID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND RoleID = ', roleID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                // OLD: "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT * FROM Members WHERE Deleted = FALSE'; IF searchName IS NOT NULL AND LENGTH(searchName) > 0 THEN SET finalQuery = CONCAT(finalQuery, ' AND (Name LIKE ''%', searchName, '%'' OR Email LIKE ''%', searchName, '%'' OR PhoneNumber LIKE ''%', searchName, '%'' )'); END IF; IF roleID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND RoleID = ', roleID); END IF; IF statusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND StatusID = ', statusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                "CREATE PROCEDURE SearchFilterSortMembers(IN searchName VARCHAR(255), IN searchEmail VARCHAR(255), IN searchPhone VARCHAR(15), IN roleID INT, IN statusID INT) BEGIN SET @finalQuery = CONCAT('SELECT m.MemberID, m.Name, m.Email, m.PhoneNumber, r.RoleID, r.Role, s.StatusID, s.Status FROM Members m LEFT JOIN MemberRoles r ON m.RoleID = r.RoleID LEFT JOIN MemberStatus s ON m.StatusID = s.StatusID WHERE m.Deleted = FALSE', IF(searchName IS NOT NULL AND LENGTH(searchName) > 0, CONCAT(' AND (m.Name LIKE ''%', searchName, '%'' OR m.Email LIKE ''%', searchEmail, '%'' OR m.PhoneNumber LIKE ''%', searchPhone, '%'' )'), ''), IF(roleID IS NOT NULL, CONCAT(' AND m.RoleID = ', roleID), ''), IF(statusID IS NOT NULL, CONCAT(' AND m.StatusID = ', statusID), '')); PREPARE stmt FROM @finalQuery; EXECUTE stmt; DEALLOCATE PREPARE stmt; END;",
+                //OLD: "CREATE PROCEDURE SearchFilterSortTransactions(IN searchTitle VARCHAR(255), IN searchName VARCHAR(255), IN filterStatusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT t.BorrowID, t.BookID, bks.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, bks.StatusID FROM Borrowing t JOIN Books bks ON t.BookID = bks.BookID JOIN Members m ON t.MemberID = m.MemberID WHERE bks.Deleted = FALSE AND m.Deleted = FALSE'; IF (searchTitle IS NOT NULL AND LENGTH(searchTitle) > 0) OR (searchName IS NOT NULL AND LENGTH(searchName) > 0) THEN SET finalQuery = CONCAT(finalQuery, ' AND (bks.Title LIKE ''%', searchTitle, '%'' OR m.Name LIKE ''%', searchName, '%'' )'); END IF; IF filterStatusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND bks.StatusID = ', filterStatusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END",
+                "CREATE PROCEDURE SearchFilterSortTransactions(IN searchTitle VARCHAR(255), IN searchName VARCHAR(255), IN filterStatusID INT) BEGIN DECLARE finalQuery TEXT; SET finalQuery = 'SELECT t.BorrowID, t.BookID, bks.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, t.StatusID, s.Status FROM Borrowing t JOIN Books bks ON t.BookID = bks.BookID JOIN Members m ON t.MemberID = m.MemberID LEFT JOIN BookStatus s ON t.StatusID = s.StatusID WHERE bks.Deleted = FALSE AND m.Deleted = FALSE'; IF (searchTitle IS NOT NULL AND LENGTH(searchTitle) > 0) OR (searchName IS NOT NULL AND LENGTH(searchName) > 0) THEN SET finalQuery = CONCAT(finalQuery, ' AND (bks.Title LIKE ''%', searchTitle, '%'' OR m.Name LIKE ''%', searchName, '%'' )'); END IF; IF filterStatusID IS NOT NULL THEN SET finalQuery = CONCAT(finalQuery, ' AND t.StatusID = ', filterStatusID); END IF; SET @query = finalQuery; PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt; END;",
                 //"CREATE PROCEDURE SearchFilterSortTransactions( IN searchTitle VARCHAR(255),  IN searchName VARCHAR(255),  IN filterStatusID INT) BEGIN  SET @query = 'SELECT t.BorrowID, t.BookID, b.Title, t.MemberID, m.Name, t.BorrowDate, t.DueDate, t.ReturnDate, b.StatusID                   FROM Borrowing t                  JOIN Books b ON t.BookID = b.BookID                  JOIN Members m ON t.MemberID = m.MemberID                  WHERE b.Deleted = FALSE AND m.Deleted = FALSE'; IF searchTitle IS NOT NULL AND searchTitle <> '' THEN  SET @query = CONCAT(@query, ' AND b.Title LIKE CONCAT(\"%\", ?, \"%\")'); END IF;  IF searchName IS NOT NULL AND searchName <> '' THEN  SET @query = CONCAT(@query, ' AND m.Name LIKE CONCAT(\"%\", ?, \"%\")'); END IF;  IF filterStatusID IS NOT NULL THEN  SET @query = CONCAT(@query, ' AND b.StatusID = ?'); END IF;  PREPARE stmt FROM @query;  EXECUTE stmt USING searchTitle, searchName, filterStatusID;  DEALLOCATE PREPARE stmt; END",
 
                 "CREATE PROCEDURE InsertBook(IN bookTitle VARCHAR(255), IN bookAuthor VARCHAR(255), IN categoryId INT, IN genreId INT, IN statusId INT, OUT p_error_message VARCHAR(255)) BEGIN IF NOT EXISTS (SELECT 1 FROM BookCategories WHERE CategoryID = categoryId) THEN SET p_error_message = 'Invalid category ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookGenres WHERE GenreID = genreId) THEN SET p_error_message = 'Invalid genre ID.'; ELSEIF NOT EXISTS (SELECT 1 FROM BookStatus WHERE StatusID = statusId) THEN SET p_error_message = 'Invalid book status ID.'; ELSEIF EXISTS (SELECT 1 FROM Books WHERE Title = bookTitle AND Author = bookAuthor) THEN SET p_error_message = 'Book already exists.'; ELSE INSERT INTO Books (Title, Author, CategoryID, GenreID, StatusID) VALUES (bookTitle, bookAuthor, categoryId, genreId, statusId); SET p_error_message = NULL; END IF; END",
@@ -367,232 +373,116 @@ public class DatabaseConnection {
         return transactions;
     }
 
-    /** // old version
-    public List<String> getAllStatus(String tableName) throws SQLException {
-        List<String> statusList = new ArrayList<>();
-
-        // Validate table name before executing the query to prevent SQL injection
-        if (!tableName.equalsIgnoreCase("bookstatus") && !tableName.equalsIgnoreCase("memberstatus")) {
-            throw new IllegalArgumentException("Invalid table name: " + tableName);
-        }
-
-        String procedureCall = "{CALL GetAllStatus(?)}";
-
-        try (CallableStatement stmt = connection.prepareCall(procedureCall)) {
-            stmt.setString(1, tableName);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    statusList.add(rs.getString("Status"));
-                }
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching status from " + tableName, e);
-            throw e; // Rethrow to propagate error
-        }
-
-        return statusList;
-    }
-
-    // Other methods relating to their model class
-    public List<BookCategory> getCategories() {
-        List<BookCategory> categories = new ArrayList<>();
-
-        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllCategories()}");
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String code = rs.getString("CategoryCode");
-                String name = rs.getString("CategoryName");
-                categories.add(new  BookCategory(code, name));
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching categories", e);
-        }
-
-        return categories;
-    }
-
-    public List<BookGenre> getGenres() {
-        List<BookGenre> genres = new ArrayList<>();
-
-        try (CallableStatement stmt = connection.prepareCall("{CALL GetAllGenres()}");
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String genreCode = rs.getString("GenreCode");
-                String genreName = rs.getString("GenreName");
-                genres.add(new BookGenre(genreCode, genreName));
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching genres", e);
-        }
-
-        return genres;
-    }
-
-
-    public List<BookStatus> getBookStatuses() {
-        List<BookStatus> bookStatusList = new ArrayList<>();
-
-        String sql = "{CALL GetAllStatus(?)}";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
-            stmt.setString(1, "bookstatus");
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String status = rs.getString("Status");
-                    int statusID = rs.getInt("StatusID");
-                    bookStatusList.add(new BookStatus(status, statusID));
-                }
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching book statuses", e);
-        }
-
-        return bookStatusList;
-    }
-
-    public List<MemberStatus> getMemberStatuses() {
-        List<MemberStatus> memberStatusList = new ArrayList<>();
-
-        String sql = "{CALL GetAllStatus(?)}";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
-            stmt.setString(1, "memberstatus");
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String status = rs.getString("Status");
-                    int statusID = rs.getInt("StatusID");
-                    memberStatusList.add(new MemberStatus(status, statusID));
-                }
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error fetching book statuses", e);
-        }
-
-        return memberStatusList;
-    }
-     */
-
-
-    // FILTERED QUERIES
-    public List<Book> viewBooksWithFilters(String searchTitle, String searchAuthor, String categoryFilter, String genreFilter, String statusFilter) {
+    public List<Book> viewBooksWithFilters(String searchTitle, String searchAuthor, Integer categoryId, Integer genreId, Integer statusId) {
         List<Book> filteredBooks = new ArrayList<>();
 
         try {
-            System.out.println("Params: " + searchTitle + ", " + searchAuthor + ", " + categoryFilter + ", " + genreFilter + ", " + statusFilter);
-
-            // Prepare stored procedure call
             String sql = "{CALL SearchFilterSortBooks(?, ?, ?, ?, ?)}";
-            try (CallableStatement stmt = connection.prepareCall(sql)) {
-                stmt.setString(1, searchTitle);
-                stmt.setString(2, searchAuthor);
-                stmt.setString(3, categoryFilter);
-                stmt.setString(4, genreFilter);
-                stmt.setString(5, statusFilter);
 
-                // Execute query
+            try (CallableStatement stmt = connection.prepareCall(sql)) {
+                stmt.setString(1, (searchTitle != null && !searchTitle.isEmpty()) ? searchTitle : null);
+                stmt.setString(2, (searchAuthor != null && !searchAuthor.isEmpty()) ? searchAuthor : null);
+                stmt.setObject(3, categoryId, Types.INTEGER);
+                stmt.setObject(4, genreId, Types.INTEGER);
+                stmt.setObject(5, statusId, Types.INTEGER);
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        int id = rs.getInt("BookID");
-                        String title = rs.getString("Title");
-                        String author = rs.getString("Author");
-                        int categoryId = rs.getInt("CategoryID");  // Fetch CategoryID
-                        String categoryCode = rs.getString("CategoryCode");
-                        String categoryName = rs.getString("CategoryName");
-                        int genreId = rs.getInt("GenreID");
-                        String genreCode = rs.getString("GenreCode");
-                        String genreName = rs.getString("GenreName");
-                        int statusId = rs.getInt("StatusID");
-                        String status = rs.getString("Status");
-
-                        filteredBooks.add(new Book(id, title, author, categoryId, categoryCode, categoryName, genreId, genreCode, genreName, statusId, status));
+                        filteredBooks.add(new Book(
+                                rs.getInt("BookID"),
+                                rs.getString("Title"),
+                                rs.getString("Author"),
+                                rs.getInt("CategoryID"),
+                                rs.getString("CategoryCode"),
+                                rs.getString("CategoryName"),
+                                rs.getInt("GenreID"),
+                                rs.getString("GenreCode"),
+                                rs.getString("GenreName"),
+                                rs.getInt("StatusID"),
+                                rs.getString("Status")
+                        ));
                     }
-                    displayResultSet(rs);
                 }
             }
         } catch (SQLException e) {
-            System.err.println("View books error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error retrieving filtered books", e);
         }
 
-        System.out.println(filteredBooks);
         return filteredBooks;
     }
 
-    public List<Member> viewMembersWithFilters(String searchName, String searchEmail, String searchPhoneNum, String roleFilter, String statusFilter) {
+    public List<Member> viewMembersWithFilters(String searchName, String searchEmail, String searchPhoneNum, Integer roleFilter, Integer statusFilter) {
         List<Member> filteredMembers = new ArrayList<>();
 
         try {
-            System.out.println("Params: " + searchName + ", " + searchEmail + ", " + searchPhoneNum + ", "  + roleFilter + ", " + statusFilter);
-
-            // Prepare stored procedure call
             String sql = "{CALL SearchFilterSortMembers(?, ?, ?, ?, ?)}";
-            try (CallableStatement stmt = connection.prepareCall(sql)) {
-                stmt.setString(1, searchName);
-                stmt.setString(2, searchEmail);
-                stmt.setString(3, searchPhoneNum);
-                stmt.setString(4, roleFilter);
-                stmt.setString(5, statusFilter);
 
-                // Execute query and retrieve results
+            try (CallableStatement stmt = connection.prepareCall(sql)) {
+                // Ensure wildcards are properly formatted
+                String formattedName = (searchName != null && !searchName.isEmpty()) ? "%" + searchName + "%" : null;
+                String formattedEmail = (searchEmail != null && !searchEmail.isEmpty()) ? "%" + searchEmail + "%" : null;
+                String formattedPhone = (searchPhoneNum != null && !searchPhoneNum.isEmpty()) ? "%" + searchPhoneNum + "%" : null;
+
+                stmt.setString(1, formattedName);
+                stmt.setString(2, formattedEmail);
+                stmt.setString(3, formattedPhone);
+                stmt.setObject(4, roleFilter, Types.INTEGER);
+                stmt.setObject(5, statusFilter, Types.INTEGER);
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        int id = rs.getInt("MemberID");
-                        String name = rs.getString("Name");
-                        String email = rs.getString("Email");
-                        String contactNum = rs.getString("PhoneNumber");
-                        int roleId = rs.getInt("RoleID");  // Fetch RoleID
-                        String role = rs.getString("Role"); // Fetch readable Role
-                        int statusId = rs.getInt("StatusID"); // Fetch StatusID
-                        String status = rs.getString("Status"); // Fetch readable Status
-
-                        filteredMembers.add(new Member(id, name, email, contactNum, roleId, role, statusId, status));
+                        filteredMembers.add(new Member(
+                                rs.getInt("MemberID"),
+                                rs.getString("Name"),
+                                rs.getString("Email"),
+                                rs.getString("PhoneNumber"),
+                                rs.getInt("RoleID"),
+                                rs.getString("Role"),
+                                rs.getInt("StatusID"),
+                                rs.getString("Status")
+                        ));
                     }
-                    displayResultSet(rs); // Debugging output
                 }
             }
         } catch (SQLException e) {
-            System.err.println("View members error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error retrieving filtered members", e);
         }
 
-        System.out.println(filteredMembers);
         return filteredMembers;
     }
 
-    public List<TransactionViewModel> searchFilterSortTransactions(String searchTitle, String searchName, int filterStatusId) throws SQLException {
+    public List<TransactionViewModel> searchFilterSortTransactions(String searchTitle, String searchName, Integer filterStatusId) {
         List<TransactionViewModel> filteredTransactions = new ArrayList<>();
 
-        String sql = "{CALL SearchFilterSortTransactions(?, ?, ?)}";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
-            stmt.setString(1, searchTitle);
-            stmt.setString(2, searchName);
-            stmt.setInt(3, filterStatusId);
+        try {
+            String sql = "{CALL SearchFilterSortTransactions(?, ?, ?)}";
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    filteredTransactions.add(new TransactionViewModel(
-                            rs.getInt("BorrowID"),
-                            rs.getInt("BookID"),
-                            rs.getString("Title"),
-                            rs.getInt("MemberID"),
-                            rs.getString("Name"),
-                            rs.getDate("BorrowDate").toLocalDate(),
-                            rs.getDate("DueDate").toLocalDate(),
-                            rs.getDate("ReturnDate") != null ? rs.getDate("ReturnDate").toLocalDate() : null,
-                            rs.getInt("StatusID"),  // Retrieve StatusID
-                            rs.getString("BookStatus")  // Retrieve readable status name
-                    ));
+            try (CallableStatement stmt = connection.prepareCall(sql)) {
+                stmt.setString(1, (searchTitle != null && !searchTitle.isEmpty()) ? searchTitle : null);
+                stmt.setString(2, (searchName != null && !searchName.isEmpty()) ? searchName : null);
+                stmt.setObject(3, filterStatusId, Types.INTEGER);  // Allows NULL values
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        filteredTransactions.add(new TransactionViewModel(
+                                rs.getInt("BorrowID"),
+                                rs.getInt("BookID"),
+                                rs.getString("Title"),
+                                rs.getInt("MemberID"),
+                                rs.getString("Name"),
+                                rs.getDate("BorrowDate").toLocalDate(),
+                                rs.getDate("DueDate").toLocalDate(),
+                                rs.getDate("ReturnDate") != null ? rs.getDate("ReturnDate").toLocalDate() : null,
+                                rs.getInt("StatusID"),  // Retrieve StatusID
+                                rs.getString("Status")  // Retrieve readable status name
+                        ));
+                    }
                 }
-
-                // Debugging output
-                displayResultSet(rs);
             }
         } catch (SQLException e) {
-            System.err.println("View transactions error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error retrieving filtered transactions", e);
         }
 
-        System.out.println("Filtered Transactions: " + filteredTransactions);
         return filteredTransactions;
     }
 

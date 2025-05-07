@@ -11,12 +11,18 @@ public class BookCategory {
     private final SimpleStringProperty categoryCode;
     private final SimpleStringProperty categoryName;
 
+    private static BookCategory selectedCategory; // Store selected category globally
+
 
     public BookCategory(int categoryId, String categoryCode, String categoryName) { // , int categoryId
         this.categoryId = new SimpleIntegerProperty(categoryId);
         this.categoryCode = new SimpleStringProperty(categoryCode);
         this.categoryName = new SimpleStringProperty(categoryName);
     }
+
+    public static void setSelectedCategory(BookCategory category) { selectedCategory = category; }
+    public static BookCategory getSelectedCategory() { return selectedCategory; }
+
 
     public int getCategoryId() { return categoryId.get(); }
     public String getCategoryCode() { return categoryCode.get(); }

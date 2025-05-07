@@ -9,11 +9,18 @@ public class MemberRole {
 
     private final SimpleIntegerProperty roleId;
     private final SimpleStringProperty role;
+    private static MemberRole selectedRole;  // Store selected role globally
 
     public MemberRole(String role , int roleId) {
         this.roleId = new SimpleIntegerProperty(roleId);
         this.role = new SimpleStringProperty(role);
     }
+
+    // Getter for selected role
+    public static MemberRole getSelectedRole() { return selectedRole; }
+
+    // Setter for selected role
+    public static void setSelectedRole(MemberRole role) { selectedRole = role; }
 
     public int getRoleId() { return roleId.get(); }
     public String getRole() { return role.get(); }

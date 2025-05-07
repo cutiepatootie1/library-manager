@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -37,7 +36,8 @@ public class BookController {
     DatabaseConnection dbasecon = new DatabaseConnection();
 
     private int selectedBookId;
-
+    private Map<String, Integer> categoryMap = new HashMap<>();
+    private Map<String, Integer> statusMap = new HashMap<>();
 
     public BookController() {
     }
@@ -267,10 +267,13 @@ public class BookController {
     public void initializeCats() {
         List<BookCategory> catList = dbasecon.getAllCategories();
 
-        // Convert to a list containing only the formatted code-name pair
-        List<String> formattedCategories = catList.stream()
-                .map(cat -> cat.getCategoryCode() + " - " + cat.getCategoryName())
-                .collect(Collectors.toList());
+        // Populate category mapping with ID
+        List<String> formattedCategories = new ArrayList<>();
+        for (BookCategory cat : catList) {
+            String formattedText = cat.getCategoryCode() + " - " + cat.getCategoryName();
+            formattedCategories.add(formattedText);
+            categoryMap.put(formattedText, cat.getCategoryId()); // Store the mapping
+        }
 
         ObservableList<String> categories = FXCollections.observableArrayList(formattedCategories);
 
@@ -283,42 +286,47 @@ public class BookController {
         }
     }
 
+    private Map<String, Integer> genreMap = new HashMap<>();
+
     @FXML
     public void initializeGenre() {
         List<BookGenre> genList = dbasecon.getAllGenres();
 
-        // Convert to a list containing only the formatted code-name pair
-        List<String> formattedGenres = genList.stream()
-                .map(gen -> gen.getGenreCode() + " - " + gen.getGenreName())
-                .collect(Collectors.toList());
+        List<String> formattedGenres = new ArrayList<>();
+        for (BookGenre gen : genList) {
+            String formattedText = gen.getGenreCode() + " - " + gen.getGenreName();
+            formattedGenres.add(formattedText);
+            genreMap.put(formattedText, gen.getGenreId()); // Store mapping
+        }
 
         ObservableList<String> genres = FXCollections.observableArrayList(formattedGenres);
         System.out.println("Genre List is null: " + (genreBox == null));  // Debugging line
 
         if (genreBox != null) {
             genreBox.setItems(genres);
-        }else{
-            System.out.println("genre box items is still null. Check your FXML");
+        } else {
+            System.out.println("Genre box items are still null. Check your FXML.");
         }
-
     }
 
+    @FXML
     public void initializeStatus() {
         List<BookStatus> statList = dbasecon.getBookStatuses();
 
-        List<String> formattedStatusses = statList.stream()
-                .map(gen -> gen.getStatus())
-                .collect(Collectors.toList());
-
-        ObservableList<String> genres = FXCollections.observableArrayList(formattedStatusses);
-        System.out.println("Genre List is null: " + (statusBox == null));  // Debugging line
-
-        if (statusBox != null) {
-            statusBox.setItems(genres);
-        }else{
-            System.out.println("status box items is still null. Check your FXML");
+        List<String> formattedStatuses = new ArrayList<>();
+        for (BookStatus stat : statList) {
+            formattedStatuses.add(stat.getStatus());
+            statusMap.put(stat.getStatus(), stat.getStatusId()); // Store mapping
         }
 
+        ObservableList<String> statuses = FXCollections.observableArrayList(formattedStatuses);
+        System.out.println("Status List is null: " + (statusBox == null));  // Debugging line
+
+        if (statusBox != null) {
+            statusBox.setItems(statuses);
+        } else {
+            System.out.println("Status box items are still null. Check your FXML.");
+        }
     }
 
 
@@ -326,6 +334,8 @@ public class BookController {
         List<Book> books = dbasecon.getAllBooks();
         mainTable.setItems(FXCollections.observableArrayList(books));
     }
+
+
 
     @FXML
     public void refreshTables() throws SQLException {
@@ -338,6 +348,19 @@ public class BookController {
         List<Book> books = dbasecon.getAllBooks();
         ObservableList<Book> bookList = FXCollections.observableArrayList(books);
         mainTable.setItems(bookList);
+
+        // Clear search field
+        searchFld.clear();
+
+        // Reset choice boxes (dropdown selections)
+        categoryBox.getSelectionModel().clearSelection();
+        genreBox.getSelectionModel().clearSelection();
+        statusBox.getSelectionModel().clearSelection();
+
+        // **Reset stored selections in model classes**
+        BookCategory.setSelectedCategory(null);
+        BookGenre.setSelectedGenre(null);
+        BookStatus.setSelectedStatus(null);
 
         // Restore selection if book still exists
         if (selectedBook != null && bookList.contains(selectedBook)) {
@@ -353,7 +376,7 @@ public class BookController {
 
     private void updateRefreshButtonState() {
         boolean hasSelection = mainTable.getSelectionModel().getSelectedItem() != null;
-        refreshButton.setDisable(!hasSelection); // Disable when no selection exists
+        //refreshButton.setDisable(!hasSelection); // Disable when no selection exists
     }
 
 
@@ -394,22 +417,43 @@ public class BookController {
         }
     }
 
+//    @FXML
+//    public void filterBooks(){
+//        String searchTitle = searchFld.getText();
+//        String searchAuthor = searchFld.getText();
+//        String categoryFilter = categoryBox.getValue() != null ? categoryBox.getValue().split(" ")[0] : "";
+//        String genreFilter = genreBox.getValue() != null ? genreBox.getValue().split(" ")[0] : "";
+//        String statusFilter = statusBox.getValue() != null ? statusBox.getValue(): "";
+//
+//        List<Book> filteredBooks = dbasecon.viewBooksWithFilters(searchTitle, searchAuthor, categoryFilter, genreFilter, statusFilter);
+//        mainTable.setItems(FXCollections.observableArrayList(filteredBooks));
+//
+//        System.out.println(filteredBooks);
+//
+//        System.out.println("CLicked button");
+//
+//    }
     @FXML
-    public void filterBooks(){
+    public void filterBooks() {
         String searchTitle = searchFld.getText();
         String searchAuthor = searchFld.getText();
-        String categoryFilter = categoryBox.getValue() != null ? categoryBox.getValue().split(" ")[0] : "";
-        String genreFilter = genreBox.getValue() != null ? genreBox.getValue().split(" ")[0] : "";
-        String statusFilter = statusBox.getValue() != null ? statusBox.getValue(): "";
 
-        List<Book> filteredBooks = dbasecon.viewBooksWithFilters(searchTitle, searchAuthor, categoryFilter, genreFilter, statusFilter);
+        handleFilterSelection();
+
+        // Retrieve IDs from the model classes
+        Integer categoryId = (BookCategory.getSelectedCategory() != null) ? BookCategory.getSelectedCategory().getCategoryId() : null;
+        Integer genreId = (BookGenre.getSelectedGenre() != null) ? BookGenre.getSelectedGenre().getGenreId() : null;
+        Integer statusId = (BookStatus.getSelectedStatus() != null) ? BookStatus.getSelectedStatus().getStatusId() : null;
+
+        // Execute filtering based on retrieved IDs
+        List<Book> filteredBooks = dbasecon.viewBooksWithFilters(searchTitle, searchAuthor, categoryId, genreId, statusId);
+
+        // Update table with filtered books
         mainTable.setItems(FXCollections.observableArrayList(filteredBooks));
 
         System.out.println(filteredBooks);
-
-        System.out.println("CLicked button");
-
     }
+
 
 
     /**
@@ -476,6 +520,29 @@ public class BookController {
             }
         } catch (IOException | SQLException e) {
             logger.log(Level.SEVERE, "Error showing member selection", e);
+        }
+    }
+
+    @FXML
+    private void handleFilterSelection() {
+        String selectedCategory = categoryBox.getValue();
+        String selectedGenre = genreBox.getValue();
+        String selectedStatus = statusBox.getValue();
+
+        // Update static variables in model classes
+        if (selectedCategory != null) {
+            Integer categoryId = categoryMap.get(selectedCategory);
+            BookCategory.setSelectedCategory(new BookCategory(categoryId, selectedCategory.split(" - ")[0], selectedCategory.split(" - ")[1]));
+        }
+
+        if (selectedGenre != null) {
+            Integer genreId = genreMap.get(selectedGenre);
+            BookGenre.setSelectedGenre(new BookGenre(genreId, selectedGenre.split(" - ")[0], selectedGenre.split(" - ")[1]));
+        }
+
+        if (selectedStatus != null) {
+            Integer statusId = statusMap.get(selectedStatus);
+            BookStatus.setSelectedStatus(new BookStatus(selectedStatus, statusId));
         }
     }
 

@@ -17,6 +17,8 @@ public class Member {
         this.name = new SimpleStringProperty(name);
         this.email = new SimpleStringProperty(email);
         this.contactNum = new SimpleStringProperty(contactNum);
+
+        // Preserve fetched values instead of overriding them
         this.roleId = new SimpleIntegerProperty(roleId);
         this.role = new SimpleStringProperty(role);
         this.statusId = new SimpleIntegerProperty(statusId);

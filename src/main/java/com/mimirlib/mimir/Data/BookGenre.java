@@ -11,11 +11,17 @@ public class BookGenre {
     private final SimpleStringProperty genreCode;
     private final SimpleStringProperty genreName;
 
+    private static BookGenre selectedGenre; // Store selected genre globally
+
+
     public BookGenre(int genreId, String genreCode, String genreName) { // , int genreId
         this.genreId = new SimpleIntegerProperty(genreId);
         this.genreCode = new SimpleStringProperty(genreCode);
         this.genreName = new SimpleStringProperty(genreName);
     }
+
+    public static void setSelectedGenre(BookGenre genre) { selectedGenre = genre; }
+    public static BookGenre getSelectedGenre() { return selectedGenre; }
 
     public int getGenreId() { return genreId.get(); }
     public String getGenreCode() { return genreCode.get(); }

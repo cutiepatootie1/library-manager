@@ -10,10 +10,16 @@ public class BookStatus {
     private final SimpleIntegerProperty statusId;
     private final SimpleStringProperty status;
 
+    private static BookStatus selectedStatus; // Store selected status globally
+
+
     public BookStatus(String status, int statusId) {
         this.statusId = new SimpleIntegerProperty(statusId);
         this.status = new SimpleStringProperty(status);
     }
+
+    public static void setSelectedStatus(BookStatus status) { selectedStatus = status; }
+    public static BookStatus getSelectedStatus() { return selectedStatus; }
 
     public int getStatusId() { return statusId.get(); }
     public String getStatus() { return status.get(); }

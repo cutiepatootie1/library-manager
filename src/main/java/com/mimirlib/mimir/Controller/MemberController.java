@@ -5,6 +5,7 @@ import com.mimirlib.mimir.Data.DatabaseConnection;
 import com.mimirlib.mimir.Data.Member;
 import com.mimirlib.mimir.Data.MemberRole;
 import com.mimirlib.mimir.Data.MemberStatus;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -22,7 +23,10 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,17 +38,14 @@ public class MemberController {
     private static final Logger logger = Logger.getLogger(MemberController.class.getName());
     DatabaseConnection dbasecon = new DatabaseConnection();
 
-
-    private final String member = "memberstatus"; // Table name
-
+    private Map<String, Integer> roleMap = new HashMap<>();
+    private Map<String, Integer> statusMap = new HashMap<>();
 
     private Member selectedMember;
     private int selectedMemberId;
 
-
     public MemberController() {
     }
-
 
     // INITIALIZE FXML IDs
     @FXML
@@ -96,14 +97,21 @@ public class MemberController {
     // INITIALIZE Methods
     public void initialize() throws SQLException {
         System.out.println("Initializing...");
+
         initializeTableColumns();
         loadMembersData();
         setupTableSelectionListener();
         membersPanel(false); // Default to non-borrow mode
+
         editInitialize();
         initializeRoles();
         initializeStatus();
         refreshTables();
+
+        // Attach listeners for filtering when a selection is made
+        roleBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> handleFilterSelection());
+        statusBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> handleFilterSelection());
+
         // Initially disable buttons except add and cancel
         deleteBtn.setDisable(true);
         resetBtn.setDisable(true);
@@ -120,8 +128,23 @@ public class MemberController {
         extNameCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
         extEmailCol.setCellValueFactory(cellData -> cellData.getValue().emailProperty());
         extContCol.setCellValueFactory(cellData -> cellData.getValue().contactNumProperty());
-        extRoleCol.setCellValueFactory(cellData -> cellData.getValue().roleProperty());
-        extStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+        extRoleCol.setCellValueFactory(cellData -> new SimpleStringProperty(
+                dbasecon.getAllRoles().stream()
+                        .filter(role -> role.getRoleId() == cellData.getValue().getRoleId()) // Match ID
+                        .map(MemberRole::getRole) // Get role name
+                        .findFirst()
+                        .orElse("Unknown")
+        ));
+
+        extStatus.setCellValueFactory(cellData -> new SimpleStringProperty(
+                dbasecon.getMemberStatuses().stream()
+                        .filter(stat -> stat.getStatusId() == cellData.getValue().getStatusId()) // Match ID
+                        .map(MemberStatus::getStatus) // Get status name
+                        .findFirst()
+                        .orElse("Unknown")
+        ));
+
+        System.out.println("Table columns initialized");
     }
 
     private void setupTableSelectionListener() {
@@ -137,6 +160,7 @@ public class MemberController {
                 resetBtn.setDisable(true);
                 selectBtn.setDisable(true);
             }
+            System.out.println("Loaded Selection Listener");
 
             // Dynamically update refresh button state
             updateRefreshButtonState();
@@ -158,9 +182,6 @@ public class MemberController {
                 statusList.stream().map(MemberStatus::getStatus).collect(Collectors.toList())
         );
 
-//        ObservableList<String> roles = FXCollections.observableArrayList(formattedRoles);
-//        ObservableList<String> status = FXCollections.observableArrayList(formattedStatusses);
-
         extNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extEmailCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extContCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -168,24 +189,59 @@ public class MemberController {
         extStatus.setCellFactory(ChoiceBoxTableCell.forTableColumn(statuses));
 
         setupEditCommitHandlers();
+        System.out.println("Loaded edit initialize");
     }
 
     public void initializeRoles() {
         List<MemberRole> roleList = dbasecon.getAllRoles();
-        List<String> formattedRoles = roleList.stream()
-                .map(MemberRole::getRole) // Extract readable role names
-                .collect(Collectors.toList());
 
-        initializeChoiceBox(roleBox, formattedRoles, "Role List is null: ");
+        if (roleList.isEmpty()) {
+            System.out.println("No roles retrieved from database.");
+            return;
+        }
+
+        List<String> formattedRoles = new ArrayList<>();
+        for (MemberRole role : roleList) {
+            formattedRoles.add(role.getRole());
+            roleMap.put(role.getRole(), role.getRoleId()); // Store name → ID mapping
+        }
+
+        ObservableList<String> roles = FXCollections.observableArrayList(formattedRoles);
+
+        if (roleBox != null) {
+            roleBox.setItems(roles);
+        } else {
+            System.out.println("Genre box items are still null. Check your FXML.");
+        }
+
+        //roleBox.setItems(FXCollections.observableArrayList(formattedRoles));
+
+//        if (roleMap.isEmpty()) {
+//            System.out.println("roleMap is empty, roles might not be loaded correctly.");
+//        }
+        System.out.println("Roles initialized");
     }
 
     public void initializeStatus() {
         List<MemberStatus> statusList = dbasecon.getMemberStatuses();
-        List<String> formattedStatuses = statusList.stream()
-                .map(MemberStatus::getStatus) // Extract readable status names
-                .collect(Collectors.toList());
 
-        initializeChoiceBox(statusBox, formattedStatuses, "Status List is null: ");
+        if (statusList.isEmpty()) {
+            System.out.println("No statuses retrieved from database.");
+            return;
+        }
+
+        List<String> formattedStatuses = new ArrayList<>();
+        for (MemberStatus stat : statusList) {
+            formattedStatuses.add(stat.getStatus());
+            statusMap.put(stat.getStatus(), stat.getStatusId()); // Store name → ID mapping
+        }
+
+        statusBox.setItems(FXCollections.observableArrayList(formattedStatuses));
+
+        if (statusMap.isEmpty()) {
+            System.out.println("statusMap is empty, statuses might not be loaded correctly.");
+        }
+        System.out.println("Status initialized");
     }
 
 
@@ -193,6 +249,7 @@ public class MemberController {
     private void loadMembersData() {
         List<Member> members = dbasecon.getAllMembers();
         mainTable.setItems(FXCollections.observableArrayList(members));
+        System.out.println("Loaded Member Data");
     }
 
     private void setupEditCommitHandlers() {
@@ -250,6 +307,14 @@ public class MemberController {
         ObservableList<Member> memberList = FXCollections.observableArrayList(members);
         mainTable.setItems(memberList);
 
+        // **Clear ChoiceBox selections to avoid retaining unwanted filters**
+        roleBox.getSelectionModel().clearSelection();
+        statusBox.getSelectionModel().clearSelection();
+
+        // **Clear stored selections in model classes**
+        MemberRole.setSelectedRole(null);
+        MemberStatus.setSelectedStatus(null);
+
         // Restore selection if it still exists
         if (selectedMember != null && memberList.contains(selectedMember)) {
             mainTable.getSelectionModel().select(selectedMember);
@@ -264,7 +329,7 @@ public class MemberController {
 
     private void updateRefreshButtonState() {
         boolean hasSelection = mainTable.getSelectionModel().getSelectedItem() != null;
-        refreshButton.setDisable(!hasSelection); // Disable if no selection exists
+        //refreshButton.setDisable(!hasSelection); // Disable if no selection exists
     }
 
 
@@ -320,19 +385,41 @@ public class MemberController {
 
     @FXML
     public void filterMembers() {
+        handleFilterSelection();
+
         String searchName = searchFld.getText();
         String searchEmail = searchFld.getText();
         String searchPhoneNum = searchFld.getText();
-        String roleFilter = roleBox.getValue() != null ? roleBox.getValue() : "";
-        String statusFilter = statusBox.getValue() != null ? statusBox.getValue() : "";
 
+        // Get selected Role and Status
+        String selectedRole = roleBox.getValue();
+        String selectedStatus = statusBox.getValue();
 
-        List<Member> filteredMembers = dbasecon.viewMembersWithFilters(searchName, searchEmail, searchPhoneNum, roleFilter, statusFilter);
+        // Convert selected role/status names to their respective IDs
+        Integer roleId = selectedRole != null ? dbasecon.getAllRoles().stream()
+                .filter(role -> role.getRole().equalsIgnoreCase(selectedRole))
+                .map(MemberRole::getRoleId)
+                .findFirst()
+                .orElse(null) : null;
+
+        Integer statusId = selectedStatus != null ? dbasecon.getMemberStatuses().stream()
+                .filter(stat -> stat.getStatus().equalsIgnoreCase(selectedStatus))
+                .map(MemberStatus::getStatusId)
+                .findFirst()
+                .orElse(null) : null;
+
+        // Properly format search fields with wildcard for `LIKE`
+        String formattedName = (searchName != null && !searchName.isEmpty()) ? "%" + searchName + "%" : null;
+        String formattedEmail = (searchEmail != null && !searchEmail.isEmpty()) ? "%" + searchEmail + "%" : null;
+        String formattedPhone = (searchPhoneNum != null && !searchPhoneNum.isEmpty()) ? "%" + searchPhoneNum + "%" : null;
+
+        // Execute filtering with updated values
+        List<Member> filteredMembers = dbasecon.viewMembersWithFilters(formattedName, formattedEmail, formattedPhone, roleId, statusId);
+
+        // Refresh table with filtered results
         mainTable.setItems(FXCollections.observableArrayList(filteredMembers));
 
-
-        System.out.println(filteredMembers);
-        System.out.println("CLicked button");
+        System.out.println("Filtered Members: " + filteredMembers);
     }
 
 
@@ -428,6 +515,7 @@ public class MemberController {
         // Always enable addBtn and cancelBtn
         addBtn.setDisable(false);
         cancelBtn.setDisable(false);
+        System.out.println("Loaded Members Panel");
     }
 
     @FXML
@@ -456,6 +544,28 @@ public class MemberController {
 
     private interface MemberPropertyUpdater {
         void update(Member member, String newValue);
+    }
+
+    @FXML
+    private void handleFilterSelection() {
+        String selectedRole = roleBox.getValue();
+        String selectedStatus = statusBox.getValue();
+
+        // Ensure role selection is valid
+        Integer roleId = (selectedRole != null && roleMap.containsKey(selectedRole)) ? roleMap.get(selectedRole) : null;
+        if (roleId != null) {
+            MemberRole.setSelectedRole(new MemberRole(selectedRole, roleId));
+        } else {
+            System.out.println("Role selection failed: " + selectedRole);
+        }
+
+        // Ensure status selection is valid
+        Integer statusId = (selectedStatus != null && statusMap.containsKey(selectedStatus)) ? statusMap.get(selectedStatus) : null;
+        if (statusId != null) {
+            MemberStatus.setSelectedStatus(new MemberStatus(selectedStatus, statusId));
+        } else {
+            System.out.println("Status selection failed: " + selectedStatus);
+        }
     }
 
     public void loadFilteredMembers(List<Member> filteredMembers) {
