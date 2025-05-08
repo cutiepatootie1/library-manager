@@ -1,8 +1,6 @@
 package com.mimirlib.mimir.Controller;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -27,6 +25,8 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import static com.mimirlib.mimir.Controller.MemberController.showErrorModal;
 
 public class BookController {
 
@@ -163,6 +163,22 @@ public class BookController {
             updateRefreshButtonState();
         });
     }
+    public static boolean illegalTitles(String title){
+        if(title.equalsIgnoreCase("Mein Kampf")){
+            showErrorModal("Error","Illegal Title","This book is banned in the country");
+            return true;
+        }else{
+            return false;
+        }
+    }
+    public static boolean illegalAuthor(String title){
+        if(title.equalsIgnoreCase("Hitler")){
+            showErrorModal("Error","Illegal Title","This author is banned in the country");
+            return true;
+        }else{
+            return false;
+        }
+    }
 
     @FXML
     private void editInitialize() throws SQLException{
@@ -194,17 +210,36 @@ public class BookController {
         configureEditCommitHandlers();
 
         extTitleCol.setOnEditCommit(event -> {
-            Book book = event.getRowValue();
-            book.idProperty().getValue();
-            book.titleProperty().set(event.getNewValue());
-            dbasecon.updateBook(book);
+            String newValue = event.getNewValue();
+
+            if(!illegalTitles(newValue)){
+                Book book = event.getRowValue();
+                book.idProperty().getValue();
+                book.titleProperty().set(event.getNewValue());
+                dbasecon.updateBook(book);
+            }else{
+                extBookTable.refresh();
+            }
         });
 
         extAuthCol.setOnEditCommit(event -> {
-            Book book = event.getRowValue();
-            book.idProperty().getValue();
-            book.authorProperty().set(event.getNewValue());
-            dbasecon.updateBook(book);
+            //
+            String newValue = event.getNewValue();
+            //containsDigit(newValue);
+            if(containsDigit(newValue) ){
+                showErrorModal("Error!!","Input contains digit","Author's name must not contain digits");
+
+            }else if(illegalAuthor(newValue)){
+                showErrorModal("Try again","Re enter author name","Reason: author name illegal");
+            }
+            else{
+                Book book = event.getRowValue();
+                book.idProperty().getValue();
+                book.authorProperty().set(event.getNewValue());
+
+                dbasecon.updateBook(book);
+            }
+
         });
 
         extCatCol.setOnEditCommit(event -> {
@@ -551,7 +586,18 @@ public class BookController {
                 .anyMatch(t -> t.getBookId() == bookId && t.getReturnDate() == null);
     }
 
+    public static boolean containsDigit(String input) {
+        for (char c : input.toCharArray()) {
+            if (Character.isDigit(c)) {
+                // showErrorModal("Error","Invalid input","Contains digit");
+                return true; // exits immediately on first digit
+            }
+        }
+        return false; // no digit found
+    }
+
     private void configureEditCommitHandlers() {
+
         extCatCol.setOnEditCommit(event -> {
             Book book = event.getRowValue();
             String selectedCategoryName = event.getNewValue();

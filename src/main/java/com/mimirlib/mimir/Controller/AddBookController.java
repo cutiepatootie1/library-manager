@@ -9,6 +9,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -17,6 +18,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static com.mimirlib.mimir.Controller.BookController.illegalAuthor;
+import static com.mimirlib.mimir.Controller.BookController.illegalTitles;
 
 public class AddBookController {
 
@@ -71,6 +75,16 @@ public class AddBookController {
 
     }
 
+    public static boolean containsDigit(String input) {
+        for (char c : input.toCharArray()) {
+            if (Character.isDigit(c)) {
+                // showErrorModal("Error","Invalid input","Contains digit");
+                return true; // exits immediately on first digit
+            }
+        }
+        return false; // no digit found
+    }
+
     @FXML
     private void addProcess(ActionEvent event) {
         String title = titlefld.getText();
@@ -101,6 +115,18 @@ public class AddBookController {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
 
+            if(containsDigit(author)){
+                authorfld.clear();
+                throw new IllegalArgumentException("Contains digit");
+            }else if( illegalAuthor(author)){
+                authorfld.clear();
+                throw new IllegalArgumentException("Enter author name again");
+            }
+
+            if(illegalTitles(title)) {
+                titlefld.clear();
+            }
+
             // Execute book input procedure with IDs instead of names
             dbasecon.bookInput(title, author, categoryId, genreId, statusId);
 
@@ -110,7 +136,17 @@ public class AddBookController {
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error adding book: " + e.getMessage(), e);
+            showErrorModal("ERROR!","Invalid input", e.getMessage());
+
         }
+    }
+
+    public static void showErrorModal(String title, String error, String message){
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(error);
+        alert.setContentText(message);
+        alert.showAndWait(); // This makes it modal
     }
 
     @FXML

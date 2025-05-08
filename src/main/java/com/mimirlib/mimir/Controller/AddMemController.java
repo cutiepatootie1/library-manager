@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -49,6 +50,26 @@ public class AddMemController {
 
     }
 
+//    public static boolean containsDigit(String input) {
+//        for (char c : input.toCharArray()) {
+//            if (Character.isDigit(c)) {
+//               // showErrorModal("Error","Invalid input","Contains digit");
+//                return true; // exits immediately on first digit
+//            }
+//        }
+//        return false; // no digit found
+//    }
+
+    public static boolean containsSpecialCharacter(String input) {
+        for (char c : input.toCharArray()) {
+            if (!Character.isLetterOrDigit(c)) {
+                //showErrorModal("Error", "Invalid input", "Contains special character");
+                return true; // exits immediately on first special character
+            }
+        }
+        return false; // no special characters found
+    }
+
     @FXML
     private void addProcess(ActionEvent event) {
         String name = namefld.getText();
@@ -71,6 +92,16 @@ public class AddMemController {
                     .map(MemberStatus::getStatusId)
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid status selected"));
+            if(containsSpecialCharacter(name)){
+                throw new IllegalArgumentException("Contains digit and/or special character");
+            }
+
+            if(contactNum.length() != 11){
+                throw new IllegalArgumentException("Phone number must be 11 digits");
+            }
+            if(!(email.contains("@")) || !(email.contains(".")) ){
+                throw new IllegalArgumentException("Contains illegal characters");
+            }
 
             // Pass IDs instead of names to the database procedure
             dbasecon.memberInput(name, email, contactNum, roleId, statusId);
@@ -81,9 +112,17 @@ public class AddMemController {
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error adding member: " + e.getMessage(), e);
+            showErrorModal("Error!!", "Error message", e.getMessage());
         }
     }
 
+    public static void showErrorModal(String title, String error, String message){
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(error);
+        alert.setContentText(message);
+        alert.showAndWait(); // This makes it modal
+    }
 
     @FXML
     private void handleClose(ActionEvent event){

@@ -3,6 +3,7 @@ package com.mimirlib.mimir.Controller;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -27,18 +28,29 @@ public class DateFormController {
     @FXML
     private void handleConfirm(ActionEvent event) {
         try {
-            if (datePicker != null) {
+
+            if (datePicker != null && selectedDate instanceof LocalDate == true) {
                 selectedDate = datePicker.getValue();
             }
             if (selectedDate == null) {
-                throw new IllegalStateException("No date selected.");
+                throw new IllegalStateException("No date selected or input is not a date.");
             }
+
             System.out.println("Selected date saved: " + selectedDate);
             handleClose(event); // Close the window after confirming
         } catch (IllegalStateException e) {
-            System.err.println("Error getting selected date: " + e.getMessage());
+            //System.err.println("Error getting selected date: " + e.getMessage());
             // Optionally, show an alert to the user
+            showErrorModal("Error", "an error occurred", e.getMessage());
         }
+    }
+
+    public void showErrorModal(String title, String error, String message){
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(error);
+        alert.setContentText(message);
+        alert.showAndWait(); // This makes it modal
     }
 
     public LocalDate getSelectedDate() {

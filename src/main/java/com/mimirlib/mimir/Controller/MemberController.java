@@ -31,6 +31,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static com.mimirlib.mimir.Controller.AddMemController.containsSpecialCharacter;
+
 
 public class MemberController {
 
@@ -182,6 +184,7 @@ public class MemberController {
                 statusList.stream().map(MemberStatus::getStatus).collect(Collectors.toList())
         );
 
+
         extNameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extEmailCol.setCellFactory(TextFieldTableCell.forTableColumn());
         extContCol.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -190,6 +193,14 @@ public class MemberController {
 
         setupEditCommitHandlers();
         System.out.println("Loaded edit initialize");
+    }
+
+    public static void showErrorModal(String title, String error, String message){
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(error);
+        alert.setContentText(message);
+        alert.showAndWait(); // This makes it modal
     }
 
     public void initializeRoles() {
@@ -252,11 +263,60 @@ public class MemberController {
         System.out.println("Loaded Member Data");
     }
 
+//    public static boolean containsDigit(String input) {
+//        for (char c : input.toCharArray()) {
+//            if (Character.isDigit(c)) {
+//                showErrorModal("Error","Invalid input","Contains digit");
+//                return true; // exits immediately on first digit
+//            }
+//        }
+//        return false; // no digit found
+//    }
+
+
     private void setupEditCommitHandlers() {
         // Standard text edits
-        extNameCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.nameProperty().set(newValue)));
-        extEmailCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.emailProperty().set(newValue)));
-        extContCol.setOnEditCommit(event -> updateMemberProperty(event, (member, newValue) -> member.contactNumProperty().set(newValue)));
+        extNameCol.setOnEditCommit(event -> {
+            //
+            String newValue = event.getNewValue();
+            //containsDigit(newValue);
+            if(!containsSpecialCharacter(newValue)){
+                event.getRowValue().nameProperty().setValue(newValue);
+                Member member = event.getRowValue();
+                dbasecon.updateMember(member);
+            }else{
+                showErrorModal("Error", "Invalid input","contains digit or special characters");
+                extMemberTable.refresh();
+            }
+
+        });
+        extEmailCol.setOnEditCommit(event -> {
+            String newValue = event.getNewValue();
+            if (newValue != null && newValue.contains("@") && newValue.contains(".")) {
+                event.getRowValue().emailProperty().setValue(newValue);
+                Member member = event.getRowValue();
+                dbasecon.updateMember(member);
+            } else {
+                showErrorModal("Error!","Invalid Email", "Email must contain '@' and '.'");
+                // Revert to old value
+                extMemberTable.refresh();
+            }
+
+        });
+        extContCol.setOnEditCommit(event ->
+                {
+                    String newValue = event.getNewValue();
+                    if (newValue != null && newValue.length() == 11) {
+                        event.getRowValue().contactNumProperty().setValue(newValue);
+                        Member member = event.getRowValue();
+                        dbasecon.updateMember(member);
+                    } else {
+                        showErrorModal("Error", "Invalid Contact", "Contact must be exactly 11 characters.");
+                        // Revert to old value
+                        extMemberTable.refresh();
+                    }
+                });
+
 
         // **Fix Role selection to store ID instead of name**
         extRoleCol.setOnEditCommit(event -> {
